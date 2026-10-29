@@ -19,7 +19,8 @@ public sealed record UninstallEntry(
     bool SystemComponent,
     bool WindowsInstaller,
     string? ParentKeyName,
-    string? ReleaseType);
+    string? ReleaseType,
+    string? QuietUninstallString = null);
 
 /// <summary>Reads Win32 apps from the same registry keys Apps &amp; Features lists, and turns them into candidates.</summary>
 public static partial class UninstallRegistry
@@ -81,7 +82,7 @@ public static partial class UninstallRegistry
                     k.GetValue("EstimatedSize") is int kb ? kb : null,
                     k.GetValue("SystemComponent") is int sc && sc == 1,
                     k.GetValue("WindowsInstaller") is int wi && wi == 1,
-                    S(k, "ParentKeyName"), S(k, "ReleaseType")));
+                    S(k, "ParentKeyName"), S(k, "ReleaseType"), S(k, "QuietUninstallString")));
             }
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException) { }
@@ -114,7 +115,8 @@ public static partial class UninstallRegistry
             list.Add(new AppCandidate(
                 e.Key, e.DisplayName, e.Publisher, e.Version, ParseInstallDate(e.InstallDate), AppSource.Win32,
                 launcher is not null, launcher, location, e.EstimatedKb is { } kb && kb > 0 ? kb * 1024L : null,
-                PlanFor(e), [], []));
+                PlanFor(e), [], [], QuietUninstall: e.QuietUninstallString is { } quiet
+                    ? PlanFor(e with { UninstallString = quiet }) : null));
         }
         return list;
     }

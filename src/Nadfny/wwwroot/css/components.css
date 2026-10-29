@@ -130,6 +130,7 @@
   transition: background-color var(--fast);
 }
 .row.no-check { grid-template-columns: minmax(0, 1fr) minmax(120px, auto) 112px auto; padding-left: 16px; }
+.row.app-row { grid-template-columns: 24px minmax(0, 1fr) minmax(120px, auto) 112px auto; }
 .row:hover { background: var(--raised); }
 .row.is-selected { background: var(--accent-soft); }
 .row.is-busy { pointer-events: none; }

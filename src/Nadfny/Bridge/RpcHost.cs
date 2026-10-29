@@ -120,6 +120,9 @@ public sealed class RpcHost
         "apps.scan" => await Scoped("apps", ct => _history.CaptureAsync(_apps.ScanAsync(a => Emit("apps.item", a), Progress("apps"), ct), ct)),
         "apps.clearCache" => await _apps.ClearCacheAsync(Str(p, "id"), Op(p), CancellationToken.None),
         "apps.uninstall" => await Scoped("uninstall", ct => _apps.UninstallAsync(Str(p, "id"), Op(p), ct)),
+        "apps.uninstallQueue" => await Scoped("uninstall", ct => _apps.UninstallQueueAsync(Paths(p), Bool(p, "quiet"), Op(p), ct)),
+        "apps.forcePreview" => await _apps.PreviewForcedRemovalAsync(Str(p, "id"), CancellationToken.None),
+        "apps.forceRemove" => await _apps.ForceRemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
         "apps.removeLeftovers" => await RemoveLeftovers(p),
 
         "recycle.query" => RecycleBinService.Query(),

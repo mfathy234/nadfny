@@ -5,6 +5,8 @@ using Nadfny.Core;
 
 namespace Nadfny.Features.Apps;
 
+public sealed class UninstallPendingException(string message) : InvalidOperationException(message);
+
 /// <summary>
 /// Runs an app's own uninstaller, the same one Apps &amp; Features would, and waits until the app is really gone
 /// (its uninstall key or manifest disappears). Many uninstallers copy themselves to Temp and exit at once, so the
@@ -35,13 +37,22 @@ public static partial class AppUninstaller
                     && !plan.Target.StartsWith("com.epicgames.launcher://", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Unknown launcher link, so nothing was opened.");
                 Start(new ProcessStartInfo(plan.Target) { UseShellExecute = true });
-                if (plan.Probe is null) return false; // nothing to watch; the user finishes in the launcher
+                if (plan.Probe is null) throw new UninstallPendingException("Finish removing the app in its launcher before continuing.");
                 op.Phase("Waiting for the launcher to remove it");
-                return await WaitUntilGoneAsync(() => File.Exists(plan.Probe), null, LauncherWait, ct);
+                try
+                {
+                    if (await WaitUntilGoneAsync(() => File.Exists(plan.Probe), null, LauncherWait, ct)) return true;
+                    throw new UninstallPendingException("The launcher has not finished. Finish or close its uninstall before continuing.");
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new UninstallPendingException("Stopped waiting for the launcher. Close or finish its uninstall before continuing.");
+                }
 
             case UninstallPlan.Msi:
-                if (!ProductCode().IsMatch(plan.Target)) throw new InvalidOperationException("That product code looks wrong, so nothing was run.");
-                return await RunAndWaitAsync(new ProcessStartInfo("msiexec.exe", $"/x {plan.Target}") { UseShellExecute = true }, plan.Probe, op, ct);
+                var msi = new ProcessStartInfo("msiexec.exe") { UseShellExecute = true };
+                foreach (var arg in MsiArguments(plan.Target, plan.Arguments == "/qb")) msi.ArgumentList.Add(arg);
+                return await RunAndWaitAsync(msi, plan.Probe, op, ct);
 
             case UninstallPlan.Command:
                 if (!File.Exists(plan.Target)) throw new InvalidOperationException($"The app's uninstaller is missing ({plan.Target}). It may already be partly removed.");
@@ -57,16 +68,39 @@ public static partial class AppUninstaller
         }
     }
 
+    internal static IReadOnlyList<string> MsiArguments(string code, bool quiet)
+    {
+        if (!ProductCode().IsMatch(code)) throw new InvalidOperationException("That product code looks wrong, so nothing was run.");
+        return quiet ? ["/x", code, "/qb"] : ["/x", code];
+    }
+
     private static async Task<bool> RunAndWaitAsync(ProcessStartInfo psi, string? registryKey, OpReporter op, CancellationToken ct)
     {
         using var proc = Start(psi);
         op.Phase("Waiting for the uninstaller to finish");
-        if (registryKey is null)
+        return await WaitForCompletionAsync(proc, registryKey is null ? () => false : () => UninstallRegistry.Exists(registryKey), op, ct);
+    }
+
+    internal static async Task<bool> WaitForCompletionAsync(Process? proc, Func<bool> stillThere, OpReporter op, CancellationToken ct)
+    {
+        try
         {
-            if (proc is not null) await proc.WaitForExitAsync(ct);
-            return true;
+            if (await WaitUntilGoneAsync(stillThere, proc, GraceAfterExit, ct)) return true;
+            throw new UninstallPendingException("The app is still installed. Finish or close any open uninstaller before continuing.");
         }
-        return await WaitUntilGoneAsync(() => UninstallRegistry.Exists(registryKey), proc, GraceAfterExit, ct);
+        catch (OperationCanceledException)
+        {
+            throw new UninstallPendingException("Stopped waiting. Finish or close any open uninstaller before continuing.");
+        }
+        finally
+        {
+            // A queue must not start another installer while this process is still active.
+            if (proc is not null && !proc.HasExited)
+            {
+                op.Phase("Waiting for the open uninstaller to close");
+                await proc.WaitForExitAsync(CancellationToken.None);
+            }
+        }
     }
 
     internal static async Task<bool> WaitUntilGoneAsync(Func<bool> stillThere, Process? proc, TimeSpan grace, CancellationToken ct, TimeSpan? poll = null)

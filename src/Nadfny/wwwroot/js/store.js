@@ -12,7 +12,7 @@ export const state = {
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
   toolchains: { ...scan(), warnings: [] },
-  apps: { ...scan(), filter: 'all', query: '', expanded: new Set() },
+  apps: { ...scan(), filter: 'all', query: '', expanded: new Set(), queueRunning: false },
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },
   system: { status: 'idle', error: null, info: null },
@@ -20,7 +20,7 @@ export const state = {
   update: { status: 'idle', error: null, info: null },
   explore: { path: null, status: 'idle', error: null, items: new Map() },
   finder: { tab: 'large', threshold: 100, age: 90, status: 'idle', error: null, items: new Map(), groups: [], selected: new Set() },
-  selection: { worktrees: new Set(), artifacts: new Set() },
+  selection: { worktrees: new Set(), artifacts: new Set(), apps: new Set() },
   busy: new Set(),
   ops: new Map(), // running host actions with live progress (see ops.js)
   batch: null, // { label, count, done, failed, freedBytes } while a multi-item removal runs
