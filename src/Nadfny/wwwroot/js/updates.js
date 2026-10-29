@@ -3,7 +3,7 @@
 import { call } from './bridge.js';
 import { confirmSheet, h, icon, toast } from './dom.js';
 import { bytes } from './format.js';
-import { runOp } from './ops.js';
+import { opFor, runOp } from './ops.js';
 import { state, update } from './store.js';
 
 const START_DELAY = 10_000;
@@ -87,6 +87,26 @@ function dismiss() {
   update();
 }
 
+// Bytes and time when this download was first seen, so the speed ignores bytes resumed from an earlier try.
+let downloadStart = null;
+
+/** "Downloading 12%, about 40 min left. You can keep using Nadfny." */
+function downloadText() {
+  const op = opFor('update');
+  if (!op || !op.total || !/^Downloading|resuming/.test(op.phase ?? '')) {
+    downloadStart = null;
+    return op?.phase ? `${op.phase}…` : 'Downloading…';
+  }
+  const now = Date.now();
+  if (!downloadStart) downloadStart = { done: op.done, at: now };
+  const percent = Math.floor((op.done / op.total) * 100);
+  const seconds = (now - downloadStart.at) / 1000;
+  const rate = seconds >= 5 ? (op.done - downloadStart.done) / seconds : 0;
+  const left = rate > 0 ? Math.ceil((op.total - op.done) / rate / 60) : null;
+  const eta = left == null ? '' : left <= 1 ? ', about a minute left' : `, about ${left} min left`;
+  return `${/resuming/.test(op.phase) ? 'Reconnecting' : 'Downloading'} ${percent}% (${bytes(op.done)} of ${bytes(op.total)})${eta}. You can keep using Nadfny.`;
+}
+
 /** Sidebar card while an update is available, downloading or ready to install. */
 export function updateCard() {
   const { status, info } = state.update;
@@ -95,7 +115,7 @@ export function updateCard() {
 
   const portable = info.mode !== 'installed';
   const title = status === 'ready' || status === 'installing' ? 'Update ready' : `Nadfny ${info.latestVersion} is available`;
-  const text = status === 'downloading' ? 'Downloading…'
+  const text = status === 'downloading' ? downloadText()
     : status === 'ready' ? `Restart to finish updating to ${info.latestVersion}.`
       : status === 'installing' ? 'Closing to install…'
         : portable ? 'Get the new portable zip from GitHub.' : `You have ${info.currentVersion}.`;
