@@ -3,7 +3,7 @@ import { deleteGoneBranches, healthBusyKey, pruneLfs, runGc, scanGitHealth } fro
 import { button, emptyState, h, icon } from '../dom.js';
 import { ago, bytes, plural } from '../format.js';
 import { opFor, elapsed } from '../ops.js';
-import { state } from '../store.js';
+import { state, update } from '../store.js';
 import { rowWrap } from './common.js';
 
 export function repoHealthSection() {
@@ -46,8 +46,23 @@ function body() {
     if (gh.status === 'scanning') return h('div', { class: 'list', 'aria-busy': 'true' }, h('div', { class: 'skeleton-row' }, h('i'), h('i'), h('i')));
     return emptyState({ ic: 'git-branch', title: 'No repositories', text: 'None of the scan locations contain a git repository.' });
   }
-  return h('div', null, repos.sort((a, b) => a.name.localeCompare(b.name)).map(repoBlock));
+  // With 100+ repositories, lead with the ones worth acting on, biggest first; the rest fold into one line.
+  const attention = repos.filter(needsAttention).sort((a, b) => reclaimable(b) - reclaimable(a) || a.name.localeCompare(b.name));
+  const fine = repos.filter((r) => !needsAttention(r)).sort((a, b) => a.name.localeCompare(b.name));
+  const showAll = !!gh.showAll;
+  return h('div', null,
+    attention.length === 0 && gh.status === 'done' && emptyState({ ic: 'check-circle', title: 'Nothing to tidy', text: 'No repository has much for git gc or the LFS cache, gone branches or stashes.' }),
+    attention.map(repoBlock),
+    fine.length > 0 && h('div', { class: 'filters' },
+      h('span', { class: 'hint' }, `${plural(fine.length, 'repository', 'repositories')} ${fine.length === 1 ? 'looks' : 'look'} fine`),
+      button(showAll ? 'Hide' : 'Show', { variant: 'quiet', small: true, key: 'health-show-all', onClick: () => update((s) => { s.gitHealth.showAll = !showAll; }) })),
+    showAll && fine.map(repoBlock));
 }
+
+const ATTENTION_BYTES = 10 * 1024 * 1024;
+const reclaimable = (r) => (r.gc ? r.gc.looseBytes + r.gc.garbageBytes : 0) + (r.lfs?.bytes ?? 0);
+const needsAttention = (r) => (r.gc && r.gc.looseBytes + r.gc.garbageBytes >= ATTENTION_BYTES)
+  || (r.lfs?.bytes ?? 0) >= ATTENTION_BYTES || r.goneBranches.length > 0 || (r.stashes?.count ?? 0) > 0;
 
 function repoBlock(repo) {
   const key = repo.path;
