@@ -26,26 +26,16 @@ public sealed record WorktreeInfo(
 
 public sealed class WorktreeService
 {
-    private const int RepoSearchDepth = 10;
-    private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "node_modules", "bin", "obj", "dist", "build", "target", "packages", "vendor", "Library", "SteamLibrary", "steamapps",
-    };
-
     private readonly ConcurrentDictionary<string, (string Repo, long Bytes)> _known = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _repoLocks = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task<IReadOnlyList<WorktreeInfo>> ScanAsync(IReadOnlyList<string> roots, Action<WorktreeInfo> onFound, ScanProgress progress, CancellationToken ct)
     {
-        progress.SetPhase("Finding repositories");
-        var repos = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-        foreach (var root in TreeWalker.EffectiveRoots(roots).Where(r => Directory.Exists(Path.Combine(r, ".git"))))
-            repos.TryAdd(root, 0);
-        await TreeWalker.RunAsync(roots, RepoSearchDepth, (dir, children) => VisitForRepos(children, repos), progress, ct);
+        var repos = await GitRepoFinder.FindAsync(roots, progress, ct);
 
         progress.SetPhase("Listing worktrees", repos.Count);
         var candidates = new ConcurrentDictionary<string, (string Repo, WorktreeEntry Entry)>(StringComparer.OrdinalIgnoreCase);
-        await Parallel.ForEachAsync(repos.Keys, new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = ct }, async (repo, token) =>
+        await Parallel.ForEachAsync(repos,new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = ct }, async (repo, token) =>
         {
             var res = await ProcessRunner.RunAsync("git", ["-C", repo, "worktree", "list", "--porcelain"], repo, TimeSpan.FromSeconds(20), token);
             progress.CompleteOne(repo);
@@ -164,21 +154,6 @@ public sealed class WorktreeService
     {
         var list = await ProcessRunner.RunAsync("git", ["-C", repo, "worktree", "list", "--porcelain"], repo, TimeSpan.FromSeconds(20), ct);
         return !list.Ok || WorktreeParser.ParsePorcelain(list.StdOut).Any(e => e.Path.Equals(full, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static IEnumerable<string> VisitForRepos(IReadOnlyList<TreeWalker.Entry> children, ConcurrentDictionary<string, byte> repos)
-    {
-        var descend = new List<string>();
-        foreach (var c in children)
-        {
-            if (!c.IsDir) continue;
-            var name = System.IO.Path.GetFileName(c.Path);
-            if (name.StartsWith('.') || SkipDirs.Contains(name)) continue;
-            // A main repo has a .git directory; linked worktrees have a .git file and are found via `git worktree list`.
-            if (Directory.Exists(System.IO.Path.Combine(c.Path, ".git"))) { repos.TryAdd(c.Path, 0); continue; }
-            descend.Add(c.Path);
-        }
-        return descend;
     }
 
     private static async Task<GitStatusSummary?> ReadStatusAsync(string worktree, CancellationToken ct)

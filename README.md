@@ -27,6 +27,7 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 | --- | --- |
 | **Storage history** | Up to 90 days of drive usage and scan totals, the top five growing items, and growth hints in Build output, Caches and Apps & games. Stored locally with a 5 MB limit; clear it from Overview. |
 | **Worktrees** | Every linked worktree across your repos, with size, branch, last commit and badges for *Merged*, *uncommitted changes*, *unpushed* and *never pushed*. Filter to "Merged & clean" and remove them in one go, optionally with their branches. |
+| **Repository health** | Under Worktrees, one row per repository with its `.git` size, and what git can tidy: loose objects for `git gc`, the Git LFS cache, branches gone from the remote (deleted only with `git branch -d`), and stash information. Every action asks first. |
 | **Docker** | Build cache, images, containers and volumes with their real sizes, one-click prunes, and compaction of Docker's WSL disk file so freed space actually returns to Windows. |
 | **WSL distros** | Every WSL 2 distribution with its disk file size and whether it shrinks automatically. Compact one distro's disk (WSL and Docker Desktop are shut down while it runs), or turn on automatic shrinking where your WSL version supports it. |
 | **Build output** | `node_modules`, `bin`/`obj`, `dist`, `target`, `.next`, `.venv`, Unity, Godot, Flutter, Elixir, CocoaPods, CMake, Gradle and Python caches. Grouped by project with tool labels, source activity age filters through 1+ year, and size or oldest-first sorting. |

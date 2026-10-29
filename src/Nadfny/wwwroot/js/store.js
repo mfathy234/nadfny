@@ -8,6 +8,7 @@ export const state = {
   history: { report: null, error: null, clearing: false },
   progress: {},
   worktrees: { ...scan(), filter: 'all' },
+  gitHealth: scan(),
   docker: { status: 'idle', error: null, report: null, tab: 'images' },
   wsl: { status: 'idle', error: null, report: null },
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },

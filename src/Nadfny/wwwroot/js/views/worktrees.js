@@ -3,6 +3,7 @@ import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
 import { ago, bytes, plural } from '../format.js';
 import { state, update } from '../store.js';
 import { checkbox, rowWrap, segmented, withOpProgress } from './common.js';
+import { repoHealthSection } from './git-health.js';
 import { FILTERS, isRisky, isSafe, isStale } from './worktrees-model.js';
 
 const FILTER_LABELS = [
@@ -35,38 +36,42 @@ export const worktreesView = {
   },
 
   render() {
-    const ws = state.worktrees;
-    const all = [...ws.items.values()];
-    if (ws.status === 'error') {
-      return emptyState({ ic: 'warning-circle', error: true, title: 'Could not list worktrees', text: ws.error, action: button('Try again', { onClick: scanWorktrees }) });
-    }
-    if (all.length === 0 && ws.status === 'scanning') return skeletonList(6);
-    if (all.length === 0) {
-      return emptyState({ ic: 'git-branch', title: 'No linked worktrees', text: 'None of the repositories in your scan locations have extra worktrees. Add another location from the sidebar if your repos live elsewhere.' });
-    }
-
-    const counts = Object.fromEntries(FILTER_LABELS.map(([k]) => [k, all.filter(FILTERS[k]).length]));
-    const items = filtered();
-    const max = Math.max(1, ...all.map((w) => w.bytes));
-
-    const groups = new Map();
-    for (const w of items) {
-      if (!groups.has(w.repoPath)) groups.set(w.repoPath, []);
-      groups.get(w.repoPath).push(w);
-    }
-    const ordered = [...groups.entries()]
-      .map(([repo, list]) => ({ repo, list: list.sort((a, b) => b.bytes - a.bytes), total: list.reduce((a, w) => a + w.bytes, 0) }))
-      .sort((a, b) => b.total - a.total);
-
-    return h('div', null,
-      h('div', { class: 'filters' },
-        segmented(FILTER_LABELS.map(([value, label]) => ({ value, label, count: counts[value] })), ws.filter,
-          (v) => update((s) => { s.worktrees.filter = v; }), 'Filter worktrees')),
-      items.length === 0
-        ? emptyState({ ic: 'check-circle', title: 'Nothing here', text: 'No worktrees match this filter.' })
-        : ordered.map((g) => group(g, max)));
+    return h('div', null, worktreeList(), repoHealthSection());
   },
 };
+
+function worktreeList() {
+  const ws = state.worktrees;
+  const all = [...ws.items.values()];
+  if (ws.status === 'error') {
+    return emptyState({ ic: 'warning-circle', error: true, title: 'Could not list worktrees', text: ws.error, action: button('Try again', { onClick: scanWorktrees }) });
+  }
+  if (all.length === 0 && ws.status === 'scanning') return skeletonList(6);
+  if (all.length === 0) {
+    return emptyState({ ic: 'git-branch', title: 'No linked worktrees', text: 'None of the repositories in your scan locations have extra worktrees. Add another location from the sidebar if your repos live elsewhere.' });
+  }
+
+  const counts = Object.fromEntries(FILTER_LABELS.map(([k]) => [k, all.filter(FILTERS[k]).length]));
+  const items = filtered();
+  const max = Math.max(1, ...all.map((w) => w.bytes));
+
+  const groups = new Map();
+  for (const w of items) {
+    if (!groups.has(w.repoPath)) groups.set(w.repoPath, []);
+    groups.get(w.repoPath).push(w);
+  }
+  const ordered = [...groups.entries()]
+    .map(([repo, list]) => ({ repo, list: list.sort((a, b) => b.bytes - a.bytes), total: list.reduce((a, w) => a + w.bytes, 0) }))
+    .sort((a, b) => b.total - a.total);
+
+  return h('div', null,
+    h('div', { class: 'filters' },
+      segmented(FILTER_LABELS.map(([value, label]) => ({ value, label, count: counts[value] })), ws.filter,
+        (v) => update((s) => { s.worktrees.filter = v; }), 'Filter worktrees')),
+    items.length === 0
+      ? emptyState({ ic: 'check-circle', title: 'Nothing here', text: 'No worktrees match this filter.' })
+      : ordered.map((g) => group(g, max)));
+}
 
 function group({ repo, list, total }, max) {
   const sel = state.selection.worktrees;
