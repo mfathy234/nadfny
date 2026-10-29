@@ -11,6 +11,7 @@ export const state = {
   docker: { status: 'idle', error: null, report: null, tab: 'images' },
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
+  toolchains: { ...scan(), warnings: [] },
   apps: { ...scan(), filter: 'all', query: '', expanded: new Set() },
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },

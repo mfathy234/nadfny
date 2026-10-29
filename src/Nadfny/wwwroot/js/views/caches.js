@@ -6,6 +6,8 @@ import { rowWrap, withOpProgress } from './common.js';
 import { scanSystemSpace } from '../system-space-actions.js';
 import { systemSpaceSection } from './system-space.js';
 import { growthSize } from './history.js';
+import { scanToolchains } from '../toolchains-actions.js';
+import { toolchainsSection } from './toolchains.js';
 
 export const cachesView = {
   id: 'caches',
@@ -20,8 +22,8 @@ export const cachesView = {
 
   actions() {
     return [button('Rescan', {
-      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning',
-      onClick: () => Promise.allSettled([scanCaches(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
+      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning' || state.toolchains.status === 'scanning',
+      onClick: () => Promise.allSettled([scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
     })];
   },
 
@@ -38,14 +40,15 @@ export const cachesView = {
         st.status === 'error' ? emptyState({ ic: 'warning-circle', error: true, title: 'Scan failed', text: st.error, action: button('Try again', { onClick: scanCaches }) })
           : !items.length && st.status === 'scanning' ? skeletonList(5) : items.length
           ? h('div', { class: 'list' }, items.map((c) => cacheRow(c, max)))
-          : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
+          : st.status === 'scanning' ? skeletonList(5) : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
+      toolchainsSection(),
       windowsSection());
   },
 };
 
 function cacheRow(c, max) {
   const busy = state.busy.has(`cache:${c.id}`);
-  const clear = button(busy ? 'Clearing…' : 'Clear', { small: true, onClick: () => clearCache(c), disabled: busy || c.bytes === 0, key: `clear-${c.id}` });
+  const clear = button(busy ? 'Clearing…' : 'Clear', { small: true, onClick: () => clearCache(c), disabled: busy || state.caches.status === 'scanning' || c.bytes === 0, key: `clear-${c.id}` });
   if (busy) clear.classList.add('busy');
   return rowWrap(c.id, h('div', { class: 'row no-check' },
     h('div', { style: { minWidth: 0 } },
