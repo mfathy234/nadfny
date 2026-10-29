@@ -2,10 +2,12 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using Nadfny.Core;
+using Nadfny.Features.Apps;
 using Nadfny.Features.Artifacts;
 using Nadfny.Features.Caches;
 using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
+using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
@@ -30,6 +32,7 @@ public sealed class RpcHost
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
     private readonly UpdateService _updates = new();
+    private readonly AppService _apps = new();
     private readonly Action _exitApp;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scans = new();
     private AppSettings _settings = AppSettings.Load();
@@ -95,6 +98,14 @@ public sealed class RpcHost
         "windows.scan" => await Scoped("windows", ct => _windows.ScanAsync(ct)),
         "windows.clean" => await _windows.CleanAsync(Ids(p), Op(p), CancellationToken.None),
 
+        "apps.scan" => await Scoped("apps", ct => _apps.ScanAsync(a => Emit("apps.item", a), Progress("apps"), ct)),
+        "apps.clearCache" => await _apps.ClearCacheAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "apps.uninstall" => await Scoped("uninstall", ct => _apps.UninstallAsync(Str(p, "id"), Op(p), ct)),
+        "apps.removeLeftovers" => await RemoveLeftovers(p),
+
+        "recycle.query" => RecycleBinService.Query(),
+        "recycle.empty" => await RecycleBinService.EmptyAsync(Str(p, "drive") is { Length: > 0 } d ? d : null, CancellationToken.None),
+
         "explore.list" => await Scoped("explore", ct => _explore.ListAsync(Str(p, "path"), e => Emit("explore.item", e), ct)),
         "explore.delete" => await DeleteExplored(Str(p, "path"), Bool(p, "permanent"), Op(p)),
 
@@ -129,6 +140,12 @@ public sealed class RpcHost
     {
         var (removed, bytes, failed) = await _artifacts.RemoveAsync(Paths(p), Op(p), CancellationToken.None);
         return new { removed, bytes, failed };
+    }
+
+    private async Task<object> RemoveLeftovers(JsonElement p)
+    {
+        var (removed, failed) = await _apps.RemoveLeftoversAsync(Str(p, "id"), Paths(p), Op(p), CancellationToken.None);
+        return new { removed, failed };
     }
 
     /// <summary>Explore may delete anywhere on a fixed drive except system and profile folders (SafeDeleter.EnsureDeletable).</summary>

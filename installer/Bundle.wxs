@@ -1,0 +1,22 @@
+<!--
+  Branded setup.exe for Nadfny: a per-user Burn bundle that chains Nadfny.wxs's MSI. An .msi can only ever show
+  Windows' generic installer icon; the bundle exe carries the Nadfny icon. Built by build/release.ps1.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle Name="Nadfny"
+          Manufacturer="mfathy234"
+          Version="$(var.Version)"
+          UpgradeCode="B3E9A5D2-7C41-4F8A-A6D0-1E52C8F4973B"
+          IconSourceFile="$(sys.SOURCEFILEDIR)..\src\Nadfny\app.ico"
+          AboutUrl="https://github.com/mfathy234/nadfny">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense"
+                                              LicenseUrl="https://github.com/mfathy234/nadfny/blob/main/LICENSE"
+                                              LogoFile="$(sys.SOURCEFILEDIR)..\docs\icon.png" />
+    </BootstrapperApplication>
+
+    <Chain>
+      <MsiPackage SourceFile="$(var.MsiPath)" />
+    </Chain>
+  </Bundle>
+</Wix>

@@ -79,12 +79,48 @@ export async function refreshDrives() {
 }
 
 export function scanAll() {
-  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanWindows()]);
+  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanWindows(), queryRecycleBin()]);
 }
 
-function freed(n) {
+/* ---------- Recycle Bin ---------- */
+
+export async function queryRecycleBin() {
+  update((s) => { s.recycle.status = 'scanning'; s.recycle.error = null; });
+  try {
+    const info = await call('recycle.query');
+    update((s) => { s.recycle.info = info; s.recycle.status = 'done'; });
+  } catch (err) {
+    update((s) => { s.recycle.status = 'error'; s.recycle.error = err.message; });
+  }
+}
+
+export async function emptyRecycleBin() {
+  const info = state.recycle.info;
+  if (!info?.items) return;
+  const { confirmed } = await confirmSheet({
+    title: 'Empty the Recycle Bin?',
+    body: 'Everything in it is deleted permanently and cannot be restored, on every drive.',
+    items: info.drives.map((d) => ({ label: `Drive ${d.drive.slice(0, 2)}`, sub: plural(d.items, 'item'), size: bytes(d.bytes) })),
+    confirmLabel: `Empty Recycle Bin (${bytes(info.bytes)})`,
+  });
+  if (!confirmed) return;
+  update((s) => s.busy.add('recycle'));
+  try {
+    const n = await call('recycle.empty');
+    freed(n);
+    toast(`Recycle Bin emptied. ${bytes(n)} freed.`);
+  } catch (err) {
+    toast(err.message, 'bad');
+  } finally {
+    update((s) => s.busy.delete('recycle'));
+    queryRecycleBin();
+  }
+}
+
+export function freed(n) {
   update((s) => { s.freed += Math.max(0, n); });
   refreshDrives().catch(() => {});
+  queryRecycleBin(); // deletes that go to the Bin show up there
 }
 
 /* ---------- Worktrees ---------- */

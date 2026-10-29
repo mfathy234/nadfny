@@ -1,6 +1,6 @@
-import { cleanWindows, clearCache, reveal, scanCaches, scanWindows } from '../actions.js';
+import { cleanWindows, clearCache, emptyRecycleBin, queryRecycleBin, reveal, scanCaches, scanWindows } from '../actions.js';
 import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
-import { bytes } from '../format.js';
+import { bytes, plural } from '../format.js';
 import { state } from '../store.js';
 import { rowWrap, withOpProgress } from './common.js';
 
@@ -18,7 +18,7 @@ export const cachesView = {
   actions() {
     return [button('Rescan', {
       icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning',
-      onClick: () => Promise.allSettled([scanCaches(), scanWindows()]),
+      onClick: () => Promise.allSettled([scanCaches(), scanWindows(), queryRecycleBin()]),
     })];
   },
 
@@ -30,6 +30,7 @@ export const cachesView = {
     const max = Math.max(1, ...items.map((c) => c.bytes));
 
     return h('div', null,
+      recycleSection(),
       h('section', { class: 'section' },
         h('div', { class: 'section-head' }, h('h2', null, 'Developer caches'), h('span', { class: 'hint' }, 'Your tools download these again when needed')),
         items.length
@@ -52,6 +53,25 @@ function cacheRow(c, max) {
         h('button', { class: 'icon-btn', type: 'button', title: c.path, 'aria-label': `Show ${c.name} in Explorer`, onclick: () => reveal(c.path) }, icon('arrow-square-out')))),
     withOpProgress(`cache:${c.id}`, sizeCell(bytes(c.bytes), c.bytes / max)),
     clear));
+}
+
+function recycleSection() {
+  const info = state.recycle.info;
+  if (!info) return null;
+  const busy = state.busy.has('recycle');
+  const empty = button(busy ? 'Emptying…' : 'Empty', { small: true, onClick: emptyRecycleBin, disabled: busy || !info.items, key: 'empty-recycle' });
+  if (busy) empty.classList.add('busy');
+  const drives = info.drives.map((d) => `${d.drive.slice(0, 2)} ${bytes(d.bytes)}`).join(' · ');
+  return h('section', { class: 'section' },
+    h('div', { class: 'list' }, rowWrap('recycle-bin', h('div', { class: 'row no-check' },
+      h('div', { style: { minWidth: 0 } },
+        h('div', { class: 'row-title' }, icon('trash'), h('span', { class: 'name' }, 'Recycle Bin')),
+        h('div', { class: 'row-sub' }, info.items
+          ? `${plural(info.items, 'item')}${info.drives.length > 1 ? ` · ${drives}` : ''}. Deleted files only free space once the Bin is emptied.`
+          : 'Empty')),
+      h('div', { class: 'row-meta' }),
+      h('div', { class: 'size' }, h('div', { class: 'size-num' }, bytes(info.bytes))),
+      empty))));
 }
 
 function windowsSection() {

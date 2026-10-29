@@ -122,7 +122,16 @@ public sealed class WorktreeService
             var res = await ProcessRunner.RunAsync("git", ["-C", repo, "worktree", "remove", "--force", "--force", full], repo, TimeSpan.FromMinutes(2), ct);
             if (!res.Ok && await IsStillListedAsync(repo, full, ct))
             {
-                if (aside is not null) { Directory.Move(aside, full); PendingDeletes.Complete(aside); }
+                if (aside is not null)
+                {
+                    // Never leave it journaled: the next start would delete a worktree git still knows about.
+                    PendingDeletes.Complete(aside);
+                    try { Directory.Move(aside, full); }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        throw new InvalidOperationException($"git could not remove it ({res.Error}), and the folder could not be moved back. It is safe at {aside}. {ex.Message}");
+                    }
+                }
                 throw new InvalidOperationException($"git could not remove it: {res.Error}");
             }
         }

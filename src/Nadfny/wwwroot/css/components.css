@@ -606,3 +606,18 @@
 .link-btn { border: 0; background: none; padding: 2px 4px; border-radius: var(--radius-s); color: var(--accent-text); font-size: 12px; cursor: default; }
 .link-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:disabled { color: var(--ink-3); text-decoration: none; }
+
+/* Apps & games */
+.search { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); }
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search input { border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; width: 180px; }
+.app-actions { display: flex; gap: 6px; justify-content: flex-end; min-width: 168px; }
+.app-detail { display: grid; gap: 2px; padding: 4px 16px 12px 40px; border-top: 1px solid var(--line); background: var(--raised); }
+.app-detail-line { display: grid; grid-template-columns: 120px minmax(0, 1fr) 90px 28px; align-items: center; gap: 10px; min-height: 30px; font-size: 12.5px; }
+.app-detail-line .label { color: var(--ink-2); }
+.app-detail-line .mono { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-detail-line .size-num { font-size: 12.5px; text-align: right; }
+@media (max-width: 760px) {
+  .search input { width: 120px; }
+  .app-detail-line { grid-template-columns: 90px minmax(0, 1fr) 70px 28px; }
+}

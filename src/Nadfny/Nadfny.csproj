@@ -10,7 +10,7 @@
     <RootNamespace>Nadfny</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <InvariantGlobalization>true</InvariantGlobalization>
     <!-- WebView2 ships a WPF assembly we never load; its WindowsBase reference conflict is harmless. -->
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
