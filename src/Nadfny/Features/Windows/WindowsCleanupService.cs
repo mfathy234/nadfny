@@ -6,37 +6,68 @@ namespace Nadfny.Features.Windows;
 public sealed record WindowsCleanupItem(string Id, string Name, string Note, bool Present, long? Bytes, string? Warning);
 
 /// <summary>
-/// Windows update leftovers, cleaned only through Windows' own Disk Cleanup (cleanmgr /sagerun) so Windows decides
-/// what is safe inside each category. Nadfny never deletes system folders itself. Needs one administrator prompt.
+/// Windows update leftovers and system crash dumps, cleaned only through Windows' own Disk Cleanup (cleanmgr /sagerun)
+/// so Windows decides what is safe inside each category. Nadfny never deletes system folders itself. Needs one
+/// administrator prompt.
 /// </summary>
 public sealed class WindowsCleanupService
 {
     private const int SageSet = 742; // our private Disk Cleanup profile number
     private const string VolumeCaches = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches";
 
-    private sealed record Definition(string Id, string Name, string Note, string[] Handlers, Func<string?> SizePath, string? Warning);
+    private sealed record Definition(string Id, string Name, string Note, string[] Handlers, string[] Paths, string? Warning);
 
     private static readonly string WindowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
     private static readonly string SystemDrive = Path.GetPathRoot(WindowsDir) ?? @"C:\";
+    private static readonly string ProgramDataDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
     // Fixed allowlist of Disk Cleanup handlers. "Device Driver Packages" is deliberately absent: removing old
     // drivers can block rolling a driver back.
     private static readonly Definition[] Definitions =
     [
         new("previous", "Previous Windows installation", "Windows.old, kept after a Windows upgrade so you can go back.",
-            ["Previous Installations"], () => Path.Combine(SystemDrive, "Windows.old"),
+            ["Previous Installations"], [Path.Combine(SystemDrive, "Windows.old")],
             "You can no longer go back to the previous version of Windows."),
         new("updates", "Windows Update cleanup", "Older copies of system files that newer updates replaced.",
-            ["Update Cleanup"], () => null,
+            ["Update Cleanup"], [],
             "Updates that are already installed can no longer be uninstalled."),
         new("delivery", "Delivery Optimization files", "Update downloads Windows keeps to share with other PCs.",
             ["Delivery Optimization Files"],
-            () => Path.Combine(WindowsDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache"), null),
+            [Path.Combine(WindowsDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache")], null),
         new("setup", "Upgrade logs and setup files", "Logs and temporary files left by Windows upgrades.",
-            ["Windows Upgrade Log Files", "Temporary Setup Files"], () => null, null),
+            ["Windows Upgrade Log Files", "Temporary Setup Files"], [], null),
+        new("memory-dump", "System memory dump", "The full memory image Windows saves after a crash. Developers sometimes need it to find out why the PC crashed.",
+            ["System error memory dump files"], [Path.Combine(WindowsDir, "MEMORY.DMP")],
+            "The details of past crashes that you might need to debug will be lost."),
+        new("minidumps", "Small crash dumps (minidumps)", "A small file for each blue screen, naming the driver or program that most likely caused it. Developers use them to track down repeated crashes.",
+            ["System error minidump files"], [Path.Combine(WindowsDir, "Minidump")],
+            "The details of past crashes that you might need to debug will be lost."),
+        new("wer-system", "Error reports (all users)", "Reports Windows saved about crashed programs for every user on this PC. Developers use them to see which program crashed and why.",
+            ["Windows Error Reporting Files"],
+            [Path.Combine(ProgramDataDir, "Microsoft", "Windows", "WER", "ReportArchive"), Path.Combine(ProgramDataDir, "Microsoft", "Windows", "WER", "ReportQueue")],
+            "Error reports you might need to debug a crash will be lost."),
     ];
 
     public static IReadOnlyCollection<string> AllowedHandlers { get; } = Definitions.SelectMany(d => d.Handlers).ToHashSet();
+
+    private readonly Func<IReadOnlySet<string>> _installedHandlers;
+
+    /// <param name="installedHandlers">Override the Disk Cleanup categories this Windows has (tests inject a fixed set).</param>
+    public WindowsCleanupService(Func<IReadOnlySet<string>>? installedHandlers = null) =>
+        _installedHandlers = installedHandlers ?? InstalledHandlers;
+
+    /// <summary>Ids whose Disk Cleanup category exists on this Windows. A category without its registry key cannot be selected.</summary>
+    internal IReadOnlyList<string> AvailableIds()
+    {
+        var installed = _installedHandlers();
+        return Definitions.Where(d => d.Handlers.Any(installed.Contains)).Select(d => d.Id).ToList();
+    }
+
+    private static IReadOnlySet<string> InstalledHandlers()
+    {
+        using var root = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(VolumeCaches);
+        return root?.GetSubKeyNames().ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
 
     public async Task<IReadOnlyList<WindowsCleanupItem>> ScanAsync(CancellationToken ct)
     {
@@ -44,21 +75,57 @@ public sealed class WindowsCleanupService
         var deliveryBytes = await DeliveryCacheBytesAsync(ct);
         return await Task.Run<IReadOnlyList<WindowsCleanupItem>>(() =>
         {
-            using var root = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(VolumeCaches);
-            var installed = root?.GetSubKeyNames().ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+            var available = AvailableIds().ToHashSet();
             return Definitions
-                .Where(d => d.Handlers.Any(installed.Contains))
-                .Select(d =>
-                {
-                    var path = d.SizePath();
-                    var readable = path is not null && Directory.Exists(path);
-                    var present = d.Id != "previous" || readable;
-                    long? bytes = d.Id == "delivery" ? deliveryBytes : readable ? DirectorySizer.Measure(path!, ct).Bytes : null;
-                    return new WindowsCleanupItem(d.Id, d.Name, d.Note, present, bytes, d.Warning);
-                })
+                .Where(d => available.Contains(d.Id))
+                .Select(d => ToItem(d, deliveryBytes, ct))
                 .Where(i => i.Present)
                 .ToList();
         }, ct);
+    }
+
+    private static WindowsCleanupItem ToItem(Definition d, long? deliveryBytes, CancellationToken ct)
+    {
+        var present = d.Paths.Length == 0 || d.Id == "delivery" || d.Paths.Any(Exists);
+        var bytes = d.Id == "delivery" ? deliveryBytes : MeasurePaths(d.Paths, ct);
+        return new WindowsCleanupItem(d.Id, d.Name, d.Note, present, bytes, d.Warning);
+    }
+
+    private static bool Exists(string path) => File.Exists(path) || Directory.Exists(path);
+
+    /// <summary>Sizes the listed files and folders read-only. Null when a folder is unreadable, so the UI says "Size unknown".</summary>
+    private static long? MeasurePaths(IReadOnlyList<string> paths, CancellationToken ct)
+    {
+        if (paths.Count == 0) return null;
+        long total = 0;
+        foreach (var path in paths)
+        {
+            if (File.Exists(path))
+            {
+                total += FileLength(path) ?? 0;
+                continue;
+            }
+            if (!Directory.Exists(path)) continue;
+            if (!CanList(path)) return null;
+            total += DirectorySizer.Measure(path, ct).Bytes;
+        }
+        return total;
+    }
+
+    private static long? FileLength(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
+    }
+
+    private static bool CanList(string path)
+    {
+        try
+        {
+            Directory.EnumerateFileSystemEntries(path).Any();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
     }
 
     private static async Task<long?> DeliveryCacheBytesAsync(CancellationToken ct)

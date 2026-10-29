@@ -1,8 +1,10 @@
 import { dockerCompact, dockerPrune, dockerRemove, scanDocker } from '../actions.js';
+import { scanWsl } from '../wsl-actions.js';
 import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
 import { bytes, plural } from '../format.js';
 import { state, update } from '../store.js';
 import { rowWrap, segmented } from './common.js';
+import { wslSection } from './wsl.js';
 
 /** Bytes Docker itself accounts for inside its disk. */
 export function dockerUsed(r) {
@@ -27,13 +29,14 @@ export const dockerView = {
   },
 
   actions() {
-    return [button('Rescan', { icon: 'arrow-clockwise', onClick: scanDocker, disabled: state.docker.status === 'scanning', key: 'rescan' })];
+    return [button('Rescan', { icon: 'arrow-clockwise', onClick: () => { scanDocker(); scanWsl(); }, disabled: state.docker.status === 'scanning', key: 'rescan' })];
   },
 
   render() {
     const { status, report, error } = state.docker;
-    if (status === 'error') return emptyState({ ic: 'warning-circle', error: true, title: 'Docker did not answer', text: error, action: button('Try again', { onClick: scanDocker }) });
-    if (!report) return skeletonList(4);
+    const wsl = wslSection();
+    if (status === 'error') return h('div', null, emptyState({ ic: 'warning-circle', error: true, title: 'Docker did not answer', text: error, action: button('Try again', { onClick: scanDocker }) }), wsl);
+    if (!report) return h('div', null, skeletonList(4), wsl);
 
     return h('div', null,
       report.running ? summary(report) : emptyState({
@@ -41,7 +44,8 @@ export const dockerView = {
         action: report.installed && button('Check again', { onClick: scanDocker }),
       }),
       report.disk && diskCallout(report),
-      report.running && lists(report));
+      report.running && lists(report),
+      wsl);
   },
 };
 

@@ -7,6 +7,8 @@ import { animateOut, state, update } from './store.js';
 import { setStreaming } from './views/common.js';
 import { isRisky } from './views/worktrees-model.js';
 import { scanToolchains } from './toolchains-actions.js';
+import { scanAiModels } from './ai-models-actions.js';
+import { scanWsl } from './wsl-actions.js';
 
 on('worktrees.item', (w) => update((s) => s.worktrees.items.set(w.path, w)));
 on('artifacts.item', (a) => update((s) => s.artifacts.items.set(a.path, a)));
@@ -80,7 +82,7 @@ export async function refreshDrives() {
 }
 
 export function scanAll() {
-  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin()]);
+  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanToolchains(), scanAiModels(), scanWindows(), scanWsl(), queryRecycleBin()]);
 }
 
 /* ---------- Recycle Bin ---------- */
@@ -242,6 +244,8 @@ export async function dockerRemove(kind, id, label, size) {
 }
 
 export async function dockerCompact(disk, used) {
+  // Both shut WSL down; never run two compactions at once.
+  if ([...state.busy].some((key) => key.startsWith('wsl:compact:') || key === 'docker:compact')) return;
   const { confirmed } = await confirmSheet({
     title: 'Compact Docker’s disk?',
     body: `The disk file is ${bytes(disk.bytes)} but Docker only uses about ${bytes(used)} inside it. Compacting gives the empty space back to Windows.`,
@@ -354,7 +358,7 @@ export async function cleanWindows(items) {
   const known = items.reduce((a, i) => a + (i.bytes ?? 0), 0);
   const warnings = items.map((i) => i.warning).filter(Boolean);
   const { confirmed } = await confirmSheet({
-    title: 'Clean up Windows update files?',
+    title: 'Clean up Windows files?',
     body: 'Windows Disk Cleanup removes these with its own safety rules. Windows asks for administrator permission, and it can take several minutes.',
     items: items.map((i) => ({ label: i.name, sub: i.note, size: i.bytes != null ? bytes(i.bytes) : 'Size unknown' })),
     warning: warnings.length ? warnings.join(' ') : null,

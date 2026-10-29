@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using Nadfny.Core;
+using Nadfny.Features.AiModels;
 using Nadfny.Features.Apps;
 using Nadfny.Features.Artifacts;
 using Nadfny.Features.Caches;
@@ -9,12 +10,14 @@ using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
 using Nadfny.Features.History;
 using Nadfny.Features.Finder;
+using Nadfny.Features.GitHealth;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
 using Nadfny.Features.SystemSpace;
 using Nadfny.Features.Toolchains;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
+using Nadfny.Features.Wsl;
 using Nadfny.Features.Worktrees;
 
 namespace Nadfny.Bridge;
@@ -29,10 +32,13 @@ public sealed class RpcHost
     private readonly Func<string?> _pickFolder;
     private readonly Func<string, bool> _setClipboard;
     private readonly WorktreeService _worktrees = new();
+    private readonly GitHealthService _gitHealth = new();
     private readonly DockerService _docker = new();
+    private readonly WslService _wsl = new();
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
     private readonly ToolchainService _toolchains = new();
+    private readonly AiModelService _aiModels = new();
     private readonly ExploreService _explore = new();
     private readonly FinderService _finder = new();
     private readonly WindowsCleanupService _windows = new();
@@ -94,10 +100,18 @@ public sealed class RpcHost
         "worktrees.scan" => await Scoped("worktrees", ct => _history.CaptureAsync(_worktrees.ScanAsync(_settings.Roots, w => Emit("worktrees.item", w), Progress("worktrees"), ct), ct)),
         "worktrees.remove" => await _worktrees.RemoveAsync(Str(p, "path"), Bool(p, "deleteBranch"), Bool(p, "allowUnsaved"), Op(p), CancellationToken.None),
 
+        "gitHealth.scan" => await Scoped("gitHealth", ct => _gitHealth.ScanAsync(_settings.Roots, r => Emit("gitHealth.item", r), Progress("gitHealth"), ct)),
+        "gitHealth.gc" => await _gitHealth.GcAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "gitHealth.lfsPrune" => await _gitHealth.LfsPruneAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "gitHealth.deleteBranches" => await _gitHealth.DeleteBranchesAsync(Str(p, "id"), Strings(p, "branches"), Op(p), CancellationToken.None),
+
         "docker.scan" => await Scoped("docker", ct => _history.CaptureAsync(_docker.ScanAsync(ct), ct)),
         "docker.prune" => await _docker.PruneAsync(Str(p, "kind"), Op(p), CancellationToken.None),
         "docker.remove" => await _docker.RemoveAsync(Str(p, "kind"), Str(p, "id"), Op(p), CancellationToken.None),
         "docker.compact" => await _docker.CompactDiskAsync(Op(p), CancellationToken.None),
+        "wsl.scan" => await Scoped("wsl", ct => _wsl.ScanAsync(ct)),
+        "wsl.compact" => await _wsl.CompactAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "wsl.sparse" => await _wsl.EnableSparseAsync(Str(p, "id"), CancellationToken.None),
 
         "artifacts.scan" => await Scoped("artifacts", ct => _history.CaptureAsync(_artifacts.ScanAsync(_settings.Roots, a => Emit("artifacts.item", a), Progress("artifacts"), ct), ct)),
         "artifacts.remove" => await RemoveArtifacts(p),
@@ -105,6 +119,9 @@ public sealed class RpcHost
 
         "caches.scan" => await Scoped("caches", ct => _history.CaptureAsync(_caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct), ct)),
         "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None, Str(p, "path") is { Length: > 0 } path ? path : null),
+
+        "aiModels.scan" => await Scoped("aiModels", ct => _aiModels.ScanAsync(m => Emit("aiModels.item", m), Progress("aiModels"), ct)),
+        "aiModels.remove" => await _aiModels.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
 
         "toolchains.scan" => await Scoped("toolchains", ct => _toolchains.ScanAsync(_settings.Roots, t => Emit("toolchains.item", t), Progress("toolchains"), ct)),
         "toolchains.remove" => await _toolchains.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
@@ -256,6 +273,11 @@ public sealed class RpcHost
 
     private static List<string> Paths(JsonElement p) =>
         p.ValueKind == JsonValueKind.Object && p.TryGetProperty("paths", out var arr) && arr.ValueKind == JsonValueKind.Array
+            ? arr.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "").Where(s => s.Length > 0).ToList()
+            : [];
+
+    private static List<string> Strings(JsonElement p, string name) =>
+        p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var arr) && arr.ValueKind == JsonValueKind.Array
             ? arr.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "").Where(s => s.Length > 0).ToList()
             : [];
 

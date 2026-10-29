@@ -7,6 +7,16 @@ import { createRequire } from 'node:module';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// The app's CSP blocks waitForFunction's polling (it evaluates strings), so poll with plain evaluate calls.
+async function until(page, predicate, arg, timeout = 10000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if (await page.evaluate(predicate, arg)) return;
+    await page.waitForTimeout(50);
+  }
+  throw new Error(`Timed out waiting for ${predicate}`);
+}
+
 const { chromium } = createRequire(import.meta.url)(process.argv[2] || 'playwright');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../src/Nadfny/wwwroot');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -53,6 +63,7 @@ try {
           case 'recycle.query': result = { items: 0, bytes: 0, drives: [] }; break;
           // Other 0.3 sections on the same pages: object-shaped answers, not the list default.
           case 'systemSpace.scan': case 'history.get': result = null; break;
+          case 'wsl.scan': result = null; break;
           case 'update.check': result = null; break;
           case 'clipboard.set': case 'toolchains.openApps': result = true; break;
           case 'toolchains.remove': result = request.params.id === 'image' ? 4096 : 0; break;
@@ -101,9 +112,9 @@ try {
   // A root change during a scan must trigger a new pin check.
   await page.evaluate(() => { window.testHost.holdNext = true; });
   await page.getByRole('button', { name: 'Rescan', exact: true }).click();
-  await page.waitForFunction(() => window.testHost.release !== null);
+  await until(page, () => window.testHost.release !== null);
   await page.getByRole('button', { name: 'Add location', exact: true }).click();
-  await page.waitForFunction(() => window.testHost.rootAdded);
+  await until(page, () => window.testHost.rootAdded);
   await page.evaluate(() => window.testHost.release());
   await page.getByText('Pinned', { exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Copy command', exact: true }).count(), 0);
@@ -117,8 +128,8 @@ try {
   const originalShow = await show.elementHandle();
   await show.focus();
   await page.evaluate(() => window.testHost.emit({ type: 'event', name: 'scan.progress', data: { scope: 'caches', phase: 'Measuring' } }));
-  await page.waitForFunction((element) => !element.isConnected, originalShow);
-  await page.waitForFunction(() => document.activeElement?.dataset.focusKey?.startsWith('show-'));
+  await until(page, (element) => !element.isConnected, originalShow);
+  await until(page, () => document.activeElement?.dataset.focusKey?.startsWith('show-'));
   assert.deepEqual(errors, []);
   console.log('Passed: command copy, Apps & Features, cancel, acknowledged recycle, permanent delete, freed bytes, queued pin rescan, light/dark layout and keyboard focus.');
 } finally {

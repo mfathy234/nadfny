@@ -65,6 +65,37 @@ public sealed class CacheServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_root, "Temp", "busy-tool", "deep", "nested", "fresh.lock")));
     }
 
+    [Theory]
+    [InlineData("crash-dumps")]
+    [InlineData("wer-archive")]
+    [InlineData("wer-queue")]
+    public async Task ClearAsync_CrashFoldersKeepFilesWrittenInTheLast24Hours(string id)
+    {
+        var old = DateTime.UtcNow.AddDays(-5);
+        Write(@"Dumps\old-crash.dmp", 50, old);
+        Write(@"Dumps\report-being-written.dmp", 100);
+        var service = new CacheService(() => [new CacheDefinition(id, "Crash folder", Path.Combine(_root, "Dumps"), "")]);
+
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        var freed = await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None);
+
+        Assert.Equal(50, freed);
+        Assert.False(File.Exists(Path.Combine(_root, "Dumps", "old-crash.dmp")));
+        Assert.True(File.Exists(Path.Combine(_root, "Dumps", "report-being-written.dmp")));
+    }
+
+    [Fact]
+    public void Definitions_ResolveCrashDumpAndErrorReportFolders()
+    {
+        var local = Path.Combine(_root, "Local");
+        var env = new Dictionary<string, string> { ["USERPROFILE"] = _root, ["LOCALAPPDATA"] = local, ["APPDATA"] = Path.Combine(_root, "Roaming") };
+        var definitions = CacheService.Definitions(key => env.GetValueOrDefault(key));
+        Assert.Equal(Path.Combine(local, "CrashDumps"), definitions.Single(x => x.Id == "crash-dumps").Path);
+        Assert.Equal(Path.Combine(local, "Microsoft", "Windows", "WER", "ReportArchive"), definitions.Single(x => x.Id == "wer-archive").Path);
+        Assert.Equal(Path.Combine(local, "Microsoft", "Windows", "WER", "ReportQueue"), definitions.Single(x => x.Id == "wer-queue").Path);
+        Assert.DoesNotContain(definitions, x => x.Path.Contains("D3DSCache", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public async Task ClearAsync_RefusesATempPathThatIsNotATempFolder()
     {

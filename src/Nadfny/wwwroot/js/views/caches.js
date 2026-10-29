@@ -8,6 +8,11 @@ import { systemSpaceSection } from './system-space.js';
 import { growthSize } from './history.js';
 import { scanToolchains } from '../toolchains-actions.js';
 import { toolchainsSection } from './toolchains.js';
+import { scanAiModels } from '../ai-models-actions.js';
+import { aiModelsSection } from './ai-models.js';
+
+const CRASH_CACHE_IDS = new Set(['crash-dumps', 'wer-archive', 'wer-queue']);
+const CRASH_WINDOWS_IDS = new Set(['memory-dump', 'minidumps', 'wer-system']);
 
 export const cachesView = {
   id: 'caches',
@@ -15,21 +20,21 @@ export const cachesView = {
   icon: 'archive-box',
 
   subtitle() {
-    const total = [...state.caches.items.values()].reduce((a, c) => a + c.bytes, 0);
+    const total = developerCaches().reduce((a, c) => a + c.bytes, 0);
     if (state.caches.status === 'scanning') return `Measuring package caches… ${bytes(total)} so far`;
     return total ? `${bytes(total)} of downloads your tools fetch again when needed` : 'Package manager and tool caches';
   },
 
   actions() {
     return [button('Rescan', {
-      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning' || state.toolchains.status === 'scanning',
-      onClick: () => Promise.allSettled([scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
+      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning' || state.toolchains.status === 'scanning' || state.aiModels.status === 'scanning',
+      onClick: () => Promise.allSettled([scanCaches(), scanToolchains(), scanAiModels(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
     })];
   },
 
   render() {
     const st = state.caches;
-    const items = [...st.items.values()].sort((a, b) => b.bytes - a.bytes);
+    const items = developerCaches();
     const max = Math.max(1, ...items.map((c) => c.bytes));
 
     return h('div', null,
@@ -41,10 +46,16 @@ export const cachesView = {
           : !items.length && st.status === 'scanning' ? skeletonList(5) : items.length
           ? h('div', { class: 'list' }, items.map((c) => cacheRow(c, max)))
           : st.status === 'scanning' ? skeletonList(5) : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
+      aiModelsSection(),
       toolchainsSection(),
+      crashSection(),
       windowsSection());
   },
 };
+
+function developerCaches() {
+  return [...state.caches.items.values()].filter((c) => !CRASH_CACHE_IDS.has(c.id)).sort((a, b) => b.bytes - a.bytes);
+}
 
 function cacheRow(c, max) {
   const busy = state.busy.has(`cache:${c.id}`);
@@ -80,10 +91,31 @@ function recycleSection() {
       empty))));
 }
 
+function crashSection() {
+  const userCaches = [...state.caches.items.values()].filter((c) => CRASH_CACHE_IDS.has(c.id)).sort((a, b) => b.bytes - a.bytes);
+  const systemItems = (state.windows.items ?? []).filter((i) => CRASH_WINDOWS_IDS.has(i.id));
+  if (!userCaches.length && !systemItems.length) return state.caches.status === 'scanning' ? skeletonList(2) : null;
+
+  const busy = state.busy.has('windows');
+  const action = systemItems.length
+    ? button(busy ? 'Cleaning…' : 'Clean up system dumps', { icon: 'broom', onClick: () => cleanWindows(systemItems), disabled: busy, key: 'clean-system-dumps' })
+    : null;
+  if (action && busy) action.classList.add('busy');
+  const max = Math.max(1, ...userCaches.map((c) => c.bytes), ...systemItems.map((i) => i.bytes ?? 0));
+
+  return h('section', { class: 'section' },
+    h('div', { class: 'section-head' }, h('h2', null, 'Crash dumps and error reports'), action),
+    h('p', { class: 'row-sub', style: { margin: '-2px 0 10px' } },
+      'Developers sometimes need these to find out why a program or the PC crashed. Recent files are kept. System dumps need administrator permission and are cleaned by Windows Disk Cleanup.'),
+    h('div', { class: 'list' },
+      userCaches.map((c) => cacheRow(c, max)),
+      systemItems.map((i) => windowsRow(i, max))));
+}
+
 function windowsSection() {
   const w = state.windows;
   if (w.status === 'error') return null;
-  const items = w.items ?? [];
+  const items = (w.items ?? []).filter((i) => !CRASH_WINDOWS_IDS.has(i.id));
   if (!items.length && w.status !== 'scanning') return null;
   const busy = state.busy.has('windows');
   const action = button(busy ? 'Cleaning…' : 'Clean up', { icon: 'broom', onClick: () => cleanWindows(items), disabled: busy || !items.length, key: 'clean-windows' });
@@ -96,11 +128,15 @@ function windowsSection() {
       action),
     h('p', { class: 'row-sub', style: { margin: '-2px 0 10px' } },
       'Cleaned by Windows Disk Cleanup with its own safety rules. Needs administrator permission once.'),
-    items.length ? h('div', { class: 'list' }, items.map((i) => rowWrap(`win-${i.id}`, h('div', { class: 'row no-check' },
-      h('div', { style: { minWidth: 0 } },
-        h('div', { class: 'row-title' }, h('span', { class: 'name' }, i.name), i.warning && h('span', { class: 'badge warn', title: i.warning }, icon('warning'), 'Read before cleaning')),
-        h('div', { class: 'row-sub' }, i.note)),
-      h('div', { class: 'row-meta' }),
-      i.bytes != null ? sizeCell(bytes(i.bytes), i.bytes / max) : h('div', { class: 'size' }, h('div', { class: 'row-sub', style: { justifyContent: 'flex-end', whiteSpace: 'nowrap' } }, 'Size unknown')),
-      h('div'))))) : skeletonList(3));
+    items.length ? h('div', { class: 'list' }, items.map((i) => windowsRow(i, max))) : skeletonList(3));
+}
+
+function windowsRow(i, max) {
+  return rowWrap(`win-${i.id}`, h('div', { class: 'row no-check' },
+    h('div', { style: { minWidth: 0 } },
+      h('div', { class: 'row-title' }, h('span', { class: 'name' }, i.name), i.warning && h('span', { class: 'badge warn', title: i.warning }, icon('warning'), 'Read before cleaning')),
+      h('div', { class: 'row-sub' }, i.note)),
+    h('div', { class: 'row-meta' }),
+    i.bytes != null ? sizeCell(bytes(i.bytes), i.bytes / max) : h('div', { class: 'size' }, h('div', { class: 'row-sub', style: { justifyContent: 'flex-end', whiteSpace: 'nowrap' } }, 'Size unknown')),
+    h('div')));
 }
