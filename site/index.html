@@ -125,35 +125,51 @@
         <figure class="shot reveal" style="margin-top:32px"><img loading="lazy" src="assets/removing.png" width="1280" height="800" alt="Three worktrees being removed in parallel, each with a live progress bar and the megabytes deleted so far"></figure>
       </div>
       <ul class="guarantees">
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Every delete names what it removes</strong><span>A confirmation shows exactly what goes and how big it is.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Unsaved work needs an extra yes</strong><span>Uncommitted changes, unpushed commits, locks, or a git status it could not read all count as risky.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Re-checked right before removal</strong><span>If you edited a worktree after the scan, it is kept.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Your source code stays</strong><span>Build output with git-tracked files or hand-written code inside is never deleted.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>System folders are off limits</strong><span>Windows, Program Files, your profile and AppData are refused by the deletion engine itself.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Fast, visible, resumable</strong><span>Deletes run in the background with live progress and finish next launch if you close the app midway.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-trash" aria-hidden="true"></i></span><div><strong>Every delete names what it removes</strong><span>A confirmation shows exactly what goes and how big it is.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-warning" aria-hidden="true"></i></span><div><strong>Unsaved work needs an extra yes</strong><span>Uncommitted changes, unpushed commits, locks, or a git status it could not read all count as risky.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i></span><div><strong>Re-checked right before removal</strong><span>If you edited a worktree after the scan, it is kept.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-code" aria-hidden="true"></i></span><div><strong>Your source code stays</strong><span>Build output with git-tracked files or hand-written code inside is never deleted.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-lock-simple" aria-hidden="true"></i></span><div><strong>System folders are off limits</strong><span>Windows, Program Files, your profile and AppData are refused by the deletion engine itself.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-lightning" aria-hidden="true"></i></span><div><strong>Fast, visible, resumable</strong><span>Deletes run in the background with live progress and finish next launch if you close the app midway.</span></div></li>
       </ul>
     </div>
   </section>
 
   <section id="download" aria-labelledby="download-h">
     <div class="wrap">
-      <h2 id="download-h" class="reveal">Download</h2>
-      <p class="section-lead reveal">Free and open source. Both versions include everything they need, so there is nothing else to install.</p>
-      <div class="dl-grid">
-        <div class="dl-card featured reveal">
-          <h3>Installer</h3>
-          <p>Installs for your user only, with no administrator rights. Adds a Start menu entry and updates itself when a new version ships.</p>
-          <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>Download installer</a>
-          <span class="dl-file" data-file="msi">Nadfny-win-x64.msi</span>
+      <div class="dl-panel reveal">
+        <div class="dl-head">
+          <img class="dl-appicon" src="favicon.svg" width="64" height="64" alt="">
+          <div>
+            <span class="pill"><span class="pill-dot" aria-hidden="true"></span><span data-release>Latest release</span></span>
+            <h2 id="download-h">Download Nadfny</h2>
+            <p>Free and open source, for Windows 10 and 11.</p>
+          </div>
         </div>
-        <div class="dl-card reveal">
-          <h3>Portable</h3>
-          <p>Unzip anywhere and run <code>Nadfny.exe</code>. Nothing is installed; it tells you when a new version is out.</p>
-          <a class="btn secondary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip"><i class="ph ph-file-zip" aria-hidden="true"></i>Download portable zip</a>
-          <span class="dl-file" data-file="zip">Nadfny-portable-win-x64.zip</span>
+
+        <div class="dl-options">
+          <a class="dl-option primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi">
+            <span class="dl-icon"><i class="ph-fill ph-download-simple" aria-hidden="true"></i></span>
+            <span class="dl-text"><strong>Installer</strong><span>Per-user, no admin rights. Adds a Start menu entry and updates itself.</span></span>
+            <span class="dl-size" data-size="msi">.msi</span>
+            <i class="ph ph-arrow-right dl-arrow" aria-hidden="true"></i>
+          </a>
+          <a class="dl-option" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip">
+            <span class="dl-icon"><i class="ph ph-file-zip" aria-hidden="true"></i></span>
+            <span class="dl-text"><strong>Portable</strong><span>Unzip anywhere and run <code>Nadfny.exe</code>. Tells you when a new version is out.</span></span>
+            <span class="dl-size" data-size="zip">.zip</span>
+            <i class="ph ph-arrow-right dl-arrow" aria-hidden="true"></i>
+          </a>
         </div>
+
+        <ul class="dl-facts">
+          <li><i class="ph ph-lock-simple" aria-hidden="true"></i>No admin rights</li>
+          <li><i class="ph ph-arrow-clockwise" aria-hidden="true"></i>Updates itself</li>
+          <li><i class="ph ph-seal-check" aria-hidden="true"></i><a href="https://github.com/mfathy234/nadfny/releases/latest">SHA-256 checksums</a></li>
+          <li><i class="ph ph-cube" aria-hidden="true"></i>.NET included</li>
+        </ul>
       </div>
-      <p class="note reveal"><strong>Requirements:</strong> Windows 10 or 11 (64-bit) with the WebView2 Runtime, which Windows 11 already includes. git and Docker are optional. Nadfny is not code-signed yet, so SmartScreen may warn the first time: choose <strong>More info</strong>, then <strong>Run anyway</strong>. Every release lists SHA-256 checksums on <a href="https://github.com/mfathy234/nadfny/releases/latest">GitHub</a>.</p>
+      <p class="dl-tip reveal"><i class="ph ph-info" aria-hidden="true"></i><span>Nadfny is not code-signed yet, so Windows SmartScreen may warn the first time. Choose <strong>More info</strong>, then <strong>Run anyway</strong>. Needs the WebView2 Runtime, which Windows 11 already includes.</span></p>
     </div>
   </section>
 

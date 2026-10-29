@@ -4,3 +4,4 @@ publish/
 artifacts/
 .vs/
 *.user
+.wrangler/

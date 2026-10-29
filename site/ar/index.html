@@ -125,35 +125,51 @@
         <figure class="shot reveal" style="margin-top:32px"><img loading="lazy" src="../assets/removing.png" width="1280" height="800" alt="ثلاثة worktrees بيتحذفوا مع بعض، ولكل واحد شريط تقدّم مباشر"></figure>
       </div>
       <ul class="guarantees">
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>كل حذف بيقولك هيمسح إيه بالظبط</strong><span>رسالة تأكيد فيها الاسم والحجم قبل أي حاجة.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>الشغل اللي مش متحفوظ محتاج موافقة زيادة</strong><span>تعديلات مش متعمل لها commit، أو كوميتات مش مرفوعة، أو قفل، أو حالة git ما اتقرتش: كلها بتعتبر خطر.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>مراجعة تانية قبل الحذف مباشرة</strong><span>لو عدّلت في worktree بعد الفحص، بيتساب.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>الكود بتاعك في أمان</strong><span>ملفات البناء اللي جواها ملفات متتبّعة في git أو كود مكتوب بإيدك عمرها ما بتتمسح.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>فولدرات النظام ممنوعة</strong><span>Windows وProgram Files وفولدر المستخدم وAppData مرفوضين من محرّك الحذف نفسه.</span></div></li>
-        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>سريع، وقدامك، وبيكمّل</strong><span>الحذف بيشتغل في الخلفية بتقدّم مباشر، ولو قفلت البرنامج في النص بيكمّل أول ما تفتحه.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-trash" aria-hidden="true"></i></span><div><strong>كل حذف بيقولك هيمسح إيه بالظبط</strong><span>رسالة تأكيد فيها الاسم والحجم قبل أي حاجة.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-warning" aria-hidden="true"></i></span><div><strong>الشغل اللي مش متحفوظ محتاج موافقة زيادة</strong><span>تعديلات مش متعمل لها commit، أو كوميتات مش مرفوعة، أو قفل، أو حالة git ما اتقرتش: كلها بتعتبر خطر.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-arrow-clockwise" aria-hidden="true"></i></span><div><strong>مراجعة تانية قبل الحذف مباشرة</strong><span>لو عدّلت في worktree بعد الفحص، بيتساب.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-code" aria-hidden="true"></i></span><div><strong>الكود بتاعك في أمان</strong><span>ملفات البناء اللي جواها ملفات متتبّعة في git أو كود مكتوب بإيدك عمرها ما بتتمسح.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-lock-simple" aria-hidden="true"></i></span><div><strong>فولدرات النظام ممنوعة</strong><span>Windows وProgram Files وفولدر المستخدم وAppData مرفوضين من محرّك الحذف نفسه.</span></div></li>
+        <li class="reveal"><span class="g-icon"><i class="ph ph-lightning" aria-hidden="true"></i></span><div><strong>سريع، وقدامك، وبيكمّل</strong><span>الحذف بيشتغل في الخلفية بتقدّم مباشر، ولو قفلت البرنامج في النص بيكمّل أول ما تفتحه.</span></div></li>
       </ul>
     </div>
   </section>
 
   <section id="download" aria-labelledby="download-h">
     <div class="wrap">
-      <h2 id="download-h" class="reveal">التحميل</h2>
-      <p class="section-lead reveal">مجاني ومفتوح المصدر. النسختين فيهم كل اللي محتاجينه، مفيش حاجة تانية تنزّلها.</p>
-      <div class="dl-grid">
-        <div class="dl-card featured reveal">
-          <h3>المثبّت</h3>
-          <p>بيتثبّت ليك انت بس من غير صلاحيات أدمن، وبيضيف اختصار في قائمة ابدأ، وبيحدّث نفسه لما ينزل إصدار جديد.</p>
-          <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>حمّل المثبّت</a>
-          <span class="dl-file" data-file="msi">Nadfny-win-x64.msi</span>
+      <div class="dl-panel reveal">
+        <div class="dl-head">
+          <img class="dl-appicon" src="../favicon.svg" width="64" height="64" alt="">
+          <div>
+            <span class="pill"><span class="pill-dot" aria-hidden="true"></span><span data-release>أحدث إصدار</span></span>
+            <h2 id="download-h">حمّل نضّفني</h2>
+            <p>مجاني ومفتوح المصدر، لويندوز 10 و11.</p>
+          </div>
         </div>
-        <div class="dl-card reveal">
-          <h3>النسخة المحمولة</h3>
-          <p>فك الضغط في أي مكان وشغّل <code>Nadfny.exe</code>. مفيش تثبيت، وبيقولك لما يكون فيه إصدار جديد.</p>
-          <a class="btn secondary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip"><i class="ph ph-file-zip" aria-hidden="true"></i>حمّل الملف المضغوط</a>
-          <span class="dl-file" data-file="zip">Nadfny-portable-win-x64.zip</span>
+
+        <div class="dl-options">
+          <a class="dl-option primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi">
+            <span class="dl-icon"><i class="ph-fill ph-download-simple" aria-hidden="true"></i></span>
+            <span class="dl-text"><strong>المثبّت</strong><span>لحسابك انت بس ومن غير صلاحيات أدمن. بيضيف اختصار في قائمة ابدأ وبيحدّث نفسه.</span></span>
+            <span class="dl-size" data-size="msi">.msi</span>
+            <i class="ph ph-arrow-right dl-arrow" aria-hidden="true"></i>
+          </a>
+          <a class="dl-option" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip">
+            <span class="dl-icon"><i class="ph ph-file-zip" aria-hidden="true"></i></span>
+            <span class="dl-text"><strong>النسخة المحمولة</strong><span>فك الضغط في أي مكان وشغّل <code>Nadfny.exe</code>. بيقولك لما ينزل إصدار جديد.</span></span>
+            <span class="dl-size" data-size="zip">.zip</span>
+            <i class="ph ph-arrow-right dl-arrow" aria-hidden="true"></i>
+          </a>
         </div>
+
+        <ul class="dl-facts">
+          <li><i class="ph ph-lock-simple" aria-hidden="true"></i>من غير صلاحيات أدمن</li>
+          <li><i class="ph ph-arrow-clockwise" aria-hidden="true"></i>بيحدّث نفسه</li>
+          <li><i class="ph ph-seal-check" aria-hidden="true"></i><a href="https://github.com/mfathy234/nadfny/releases/latest">بصمات SHA-256</a></li>
+          <li><i class="ph ph-cube" aria-hidden="true"></i>‏.NET مدمج</li>
+        </ul>
       </div>
-      <p class="note reveal"><strong>المتطلبات:</strong> ويندوز 10 أو 11 (64 بت) مع WebView2 Runtime، وده موجود أصلًا في ويندوز 11. git وDocker اختياريين. نضّفني لسه مش موقّع رقميًا، فممكن SmartScreen يحذّرك أول مرة: اختار <strong>More info</strong> وبعدين <strong>Run anyway</strong>. كل إصدار عليه بصمات SHA-256 على <a href="https://github.com/mfathy234/nadfny/releases/latest">GitHub</a>.</p>
+      <p class="dl-tip reveal"><i class="ph ph-info" aria-hidden="true"></i><span>نضّفني لسه مش موقّع رقميًا، فممكن SmartScreen يحذّرك أول مرة: اختار <strong>More info</strong> وبعدين <strong>Run anyway</strong>. محتاج WebView2 Runtime، وده موجود أصلًا في ويندوز 11.</span></p>
     </div>
   </section>
 

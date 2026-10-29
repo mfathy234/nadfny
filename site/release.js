@@ -16,12 +16,19 @@
         if (!asset) return;
         document.querySelectorAll('[data-dl="' + kind + '"]').forEach(function (a) { a.href = asset.browser_download_url; });
         document.querySelectorAll('[data-file="' + kind + '"]').forEach(function (el) { el.textContent = asset.name + ', ' + mb(asset.size); });
+        document.querySelectorAll('[data-size="' + kind + '"]').forEach(function (el) { el.textContent = mb(asset.size); });
         document.querySelectorAll('[data-meta="' + kind + '"]').forEach(function (el) {
           el.textContent = ar ? 'الإصدار ' + version + '، ويندوز 10 و11، ' + mb(asset.size)
                               : 'Version ' + version + ', Windows 10 and 11, ' + mb(asset.size);
         });
       });
       document.querySelectorAll('[data-version]').forEach(function (el) { el.textContent = version; });
+      var date = release.published_at
+        ? new Date(release.published_at).toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+      document.querySelectorAll('[data-release]').forEach(function (el) {
+        el.textContent = (ar ? 'الإصدار ' : 'Version ') + version + (date ? (ar ? '، ' : ', ') + date : '');
+      });
     })
     .catch(function () { /* links already point at the latest release page */ });
 })();

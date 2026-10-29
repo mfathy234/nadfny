@@ -173,3 +173,92 @@ section { padding: 96px 0; }
 
 .area-icon .ph, .area-icon .ph-fill { font-size: 22px; }
 .check .ph-fill { font-size: 15px; }
+
+/* ---------- Safety: icon tiles (shared language with the feature list) ---------- */
+.guarantees { gap: 0; border-top: 1px solid var(--border); }
+.guarantees li { grid-template-columns: 40px 1fr; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--border); }
+.g-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(52 211 153 / 0.1); color: var(--accent); font-size: 21px; }
+.guarantees span:not(.g-icon) { display: block; margin-top: 2px; }
+
+/* ---------- Download panel ---------- */
+.dl-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 44px;
+  border-radius: 22px;
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgb(52 211 153 / 0.14), transparent 60%),
+    radial-gradient(50% 60% at 0% 100%, rgb(52 211 153 / 0.06), transparent 70%),
+    linear-gradient(180deg, #131720, #0f1218);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 30px 80px rgb(0 0 0 / 0.35);
+}
+.dl-panel::before {
+  /* faint grid that fades out: depth without decoration noise */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(80% 80% at 85% 10%, #000, transparent 70%);
+}
+.dl-head { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+.dl-appicon { width: 72px; height: 72px; filter: drop-shadow(0 10px 30px rgb(52 211 153 / 0.25)); }
+.dl-head h2 { margin-top: 8px; }
+.dl-head p { color: var(--muted); margin-top: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px 4px 9px; border-radius: 999px; background: rgb(52 211 153 / 0.1); border: 1px solid rgb(52 211 153 / 0.25); color: var(--accent); font-size: 0.82rem; font-weight: 600; }
+.pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgb(52 211 153 / 0.2); }
+
+.dl-options { display: grid; gap: 12px; margin-top: 34px; }
+.dl-option {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto 24px;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px 18px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgb(255 255 255 / 0.02);
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 0.2s var(--ease), border-color 0.2s, background-color 0.2s;
+}
+.dl-option:hover { border-color: #3a4252; background: rgb(255 255 255 / 0.04); transform: translateY(-2px); }
+.dl-option:active { transform: scale(0.99); }
+.dl-option.primary { border-color: rgb(52 211 153 / 0.45); background: linear-gradient(90deg, rgb(52 211 153 / 0.12), rgb(52 211 153 / 0.03)); }
+.dl-option.primary:hover { border-color: var(--accent); }
+.dl-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: var(--surface-2); color: var(--text); font-size: 22px; }
+.dl-option.primary .dl-icon { background: var(--accent); color: var(--on-accent); }
+.dl-text strong { display: block; font: 600 1.12rem var(--font-head); color: var(--heading); }
+.dl-text > span { display: block; margin-top: 3px; color: var(--muted); font-size: 0.94rem; }
+.dl-size { font: 500 0.85rem var(--font-mono); color: var(--muted); padding: 4px 9px; border-radius: 999px; background: rgb(255 255 255 / 0.05); white-space: nowrap; }
+.dl-arrow { font-size: 20px; color: var(--muted); transition: transform 0.2s var(--ease), color 0.2s; }
+.dl-option:hover .dl-arrow { transform: translateX(4px); color: var(--accent); }
+[dir="rtl"] .dl-arrow { transform: scaleX(-1); }
+[dir="rtl"] .dl-option:hover .dl-arrow { transform: scaleX(-1) translateX(4px); }
+
+.dl-facts { display: flex; flex-wrap: wrap; gap: 10px 26px; list-style: none; margin: 28px 0 0; padding: 22px 0 0; border-top: 1px solid rgb(255 255 255 / 0.06); color: var(--muted); font-size: 0.92rem; }
+.dl-facts li { display: inline-flex; align-items: center; gap: 8px; }
+.dl-facts .ph { color: var(--accent); font-size: 17px; }
+.dl-facts a { color: inherit; text-decoration-color: rgb(138 147 166 / 0.5); }
+.dl-facts a:hover { color: var(--text); }
+
+.dl-tip { display: flex; gap: 10px; align-items: flex-start; max-width: 80ch; margin: 22px 4px 0; color: var(--muted); font-size: 0.9rem; }
+.dl-tip .ph { color: var(--muted); font-size: 18px; margin-top: 2px; flex: none; }
+.dl-tip strong { color: var(--text); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .dl-panel { padding: 26px 20px; border-radius: 18px; }
+  .dl-head { grid-template-columns: 1fr; gap: 16px; }
+  .dl-appicon { width: 56px; height: 56px; }
+  .dl-option { grid-template-columns: 40px minmax(0, 1fr) 20px; gap: 14px; padding: 16px; }
+  .dl-icon { width: 40px; height: 40px; font-size: 19px; }
+  .dl-size { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl-option, .dl-arrow { transition: none; }
+  .dl-option:hover, .dl-option:active, .dl-option:hover .dl-arrow { transform: none; }
+}
+.guarantees .g-icon { color: var(--accent); }

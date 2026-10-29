@@ -7,4 +7,4 @@ Static site served by Cloudflare Pages at https://nadfny.pages.dev/ from this `s
 - `motion.js` adds scroll reveals; content is visible without it and reduced motion is respected.
 - `assets/og.png` is the 1200 x 630 social preview.
 
-Preview locally with `npx serve site`. Deploy with `npx wrangler pages deploy site --project-name nadfny`.
+Preview locally with `npx serve site`. Cloudflare Pages is connected to this repository: every push to `main` deploys `site/` automatically (no build command, output directory `site`).
