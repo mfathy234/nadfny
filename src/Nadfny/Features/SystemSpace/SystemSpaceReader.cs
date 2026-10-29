@@ -41,7 +41,8 @@ internal static class SystemSpaceReader
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power");
-            enabled = key?.GetValue("HibernateEnabled");
+            // Many PCs never write HibernateEnabled; Windows then uses HibernateEnabledDefault.
+            enabled = key?.GetValue("HibernateEnabled") ?? key?.GetValue("HibernateEnabledDefault");
             type = key?.GetValue("HiberFileType");
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException) { }

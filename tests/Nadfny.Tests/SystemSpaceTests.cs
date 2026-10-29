@@ -11,7 +11,7 @@ public sealed class SystemSpaceTests
     [InlineData(1, 2, true, "full")]
     [InlineData(1, 1, true, "reduced")]
     [InlineData(0, null, false, "unknown")]
-    [InlineData(null, 9, null, "unknown")]
+    [InlineData(null, 9, true, "unknown")] // no registry value, but the file exists: on
     public void MapsPowerRegistry(int? enabled, int? type, bool? expected, string expectedType)
     {
         var result = SystemSpaceMapper.Hibernation(@"C:\hiberfil.sys", 4096, enabled, type);
@@ -88,6 +88,14 @@ public sealed class SystemSpaceTests
         var result = SystemSpaceMapper.Hibernation("test", null, enabled, type);
         Assert.Null(result.Enabled);
         Assert.Equal("unknown", result.FileType);
+    }
+
+    [Fact]
+    public void AHibernationFileOnDiskMeansOnWhenTheRegistryIsSilent()
+    {
+        Assert.True(SystemSpaceMapper.Hibernation(@"C:\hiberfil.sys", 13_600_000_000, null, null).Enabled);
+        Assert.Null(SystemSpaceMapper.Hibernation(@"C:\hiberfil.sys", 0, null, null).Enabled);
+        Assert.False(SystemSpaceMapper.Hibernation(@"C:\hiberfil.sys", 13_600_000_000, 0, null).Enabled); // explicit value wins
     }
 
     [Theory]

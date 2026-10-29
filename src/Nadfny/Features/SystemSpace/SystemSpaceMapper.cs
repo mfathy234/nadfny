@@ -16,8 +16,9 @@ internal sealed record CimSpace(bool? AutomaticManaged, IReadOnlyList<ShadowStor
 
 internal static class SystemSpaceMapper
 {
+    // With no usable registry value, a hiberfil.sys on disk means hibernation is on (Windows deletes it when off).
     internal static HibernationInfo Hibernation(string path, long? bytes, object? enabled, object? type) =>
-        new(path, bytes, enabled is int e && e is 0 or 1 ? e == 1 : null,
+        new(path, bytes, enabled is int e && e is 0 or 1 ? e == 1 : bytes > 0 ? true : null,
             type is int t ? t switch { 1 => "reduced", 2 => "full", _ => "unknown" } : "unknown");
 
     internal static CimSpace Cim(JsonElement root)

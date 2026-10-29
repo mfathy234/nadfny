@@ -14,7 +14,8 @@ function row(title, note, amount, actions = [], progress = false) {
       h('div', { class: 'row-sub' }, note)),
     h('div', { class: 'row-meta' }),
     progress ? withOpProgress('systemSpace', cell) : cell,
-    h('div', { class: 'row-actions' }, actions));
+    // Not .row-actions: those only show on hover, and these are the section's main actions.
+    h('div', { class: 'space-actions' }, actions));
 }
 
 export function systemSpaceSection() {

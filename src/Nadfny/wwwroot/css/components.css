@@ -629,3 +629,7 @@
 .history-drives { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .history-figure { margin: 16px 0 0; }
 .history-chart { display: block; width: 100%; max-width: 640px; height: 84px; color: var(--accent-text); }
+
+/* Windows space: always-visible actions in a fixed column so sizes line up */
+.space-actions { display: flex; gap: 6px; justify-content: flex-end; min-width: 300px; }
+@media (max-width: 760px) { .space-actions { min-width: 0; flex-wrap: wrap; } }

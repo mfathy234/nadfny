@@ -51,6 +51,8 @@ try {
           case 'system.info': result = {}; break;
           case 'docker.scan': result = null; break;
           case 'recycle.query': result = { items: 0, bytes: 0, drives: [] }; break;
+          // Other 0.3 sections on the same pages: object-shaped answers, not the list default.
+          case 'systemSpace.scan': case 'history.get': result = null; break;
           case 'update.check': result = null; break;
           case 'clipboard.set': case 'toolchains.openApps': result = true; break;
           case 'toolchains.remove': result = request.params.id === 'image' ? 4096 : 0; break;

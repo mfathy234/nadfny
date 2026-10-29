@@ -25,7 +25,7 @@ function toolchainRow(item, max) {
   const key = `toolchain:${item.id}`;
   const busy = state.busy.has(key);
   const actions = item.kind === 'dotnet'
-    ? h('div', { class: 'row-actions' },
+    ? h('div', { class: 'app-actions' }, // always visible, unlike hover-only .row-actions
       item.command && button('Copy command', { small: true, key: `copy-${item.id}`, onClick: () => copyText(item.command, 'Uninstall command copied') }),
       button('Apps & Features', { small: true, key: `apps-${item.id}`, onClick: openAppsFeatures }))
     : button(busy ? 'Removing…' : item.recycle ? 'Move to Bin' : 'Remove', {
