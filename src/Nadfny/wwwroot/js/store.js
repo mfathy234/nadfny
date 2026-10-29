@@ -18,6 +18,7 @@ export const state = {
   systemSpace: { status: 'idle', error: null, info: null },
   update: { status: 'idle', error: null, info: null },
   explore: { path: null, status: 'idle', error: null, items: new Map() },
+  finder: { tab: 'large', threshold: 100, age: 90, status: 'idle', error: null, items: new Map(), groups: [], selected: new Set() },
   selection: { worktrees: new Set(), artifacts: new Set() },
   busy: new Set(),
   ops: new Map(), // running host actions with live progress (see ops.js)

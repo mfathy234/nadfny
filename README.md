@@ -34,6 +34,7 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 | **Recycle Bin** | How much the Bin holds on each drive, and emptying it, since deleted files only free space once it is emptied. |
 | **Windows space** | Hibernation file size, confirmed controls to turn it off or reduce it, pagefile and swapfile sizes per drive, and restore-point counts and shadow storage usage. Pagefile and restore settings open in Windows; Nadfny does not delete restore points. |
 | **Explore** | Drill into any drive or folder by size, reveal in Explorer, or delete to the Recycle Bin. |
+| **Large files** | Find files over 100 MB, 500 MB or 1 GB in your scan locations, review Downloads untouched for 30, 90 or 180 days by type, and find verified duplicates of at least 1 MB without counting hard links. Move selected items to the Recycle Bin; duplicate groups always keep at least one copy. |
 | **This PC** | CPU, GPU (with real VRAM and clocks), every RAM stick, every drive (NVMe, SATA, HDD), displays, motherboard and BIOS, each with a copy button. It even tells you when your RAM is running below its rated speed. |
 
 Scan your project folders, or switch on **All drives** to scan every local disk.
