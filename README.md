@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mfathy234/nadfny/releases/latest"><b>Download for Windows</b></a>
+  <a href="https://github.com/mfathy234/nadfny/releases/latest"><b>Download for Windows</b></a> · <a href="https://nadfny.pages.dev/">Website</a>
 </p>
 
 <p align="center">

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nadfny - Get your disk back</title>
+<meta name="description" content="Nadfny finds the gigabytes developers lose to git worktrees, Docker, node_modules and caches, and cleans them up without touching your work. Free for Windows.">
+<link rel="canonical" href="https://nadfny.pages.dev/">
+<link rel="alternate" hreflang="en" href="https://nadfny.pages.dev/">
+<link rel="alternate" hreflang="ar" href="https://nadfny.pages.dev/ar/">
+<meta name="theme-color" content="#0c0e12">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.png" type="image/png" sizes="64x64">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nadfny">
+<meta property="og:title" content="Nadfny - Get your disk back">
+<meta property="og:description" content="Find what is eating your disk and clean it up safely: git worktrees, Docker, build output and caches. Free for Windows.">
+<meta property="og:url" content="https://nadfny.pages.dev/">
+<meta property="og:image" content="https://nadfny.pages.dev/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://nadfny.pages.dev/assets/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="vendor/phosphor/phosphor.css">
+<link rel="stylesheet" href="style.css">
+<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#top" aria-label="Nadfny home"><img src="favicon.svg" width="28" height="28" alt=""><span>Nadfny</span></a>
+    <nav aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#safety">Safety</a>
+      <a href="#download">Download</a>
+      <a class="keep" href="https://github.com/mfathy234/nadfny" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+    <a class="lang-switch" lang="ar" href="ar/">العربية</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 class="reveal" style="--i:0">Get your disk <em>back</em>.</h1>
+        <p class="lead reveal" style="--i:1">Nadfny finds the gigabytes developers lose to git worktrees, Docker, <code>node_modules</code> and caches, then cleans them up without touching your work.</p>
+        <div class="cta reveal" style="--i:2">
+          <a class="btn primary download" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi">
+            <i class="ph-fill ph-download-simple" aria-hidden="true"></i>
+            <span class="btn-label"><span class="btn-title">Download for Windows</span><span class="btn-meta" data-meta="msi">Windows 10 and 11, free</span></span>
+          </a>
+          <a class="btn secondary" href="#download">Portable version</a>
+        </div>
+        <p class="meaning reveal" style="--i:3"><bdi lang="ar">نضّفني</bdi> (Nadfny) is Egyptian Arabic for "clean me".</p>
+      </div>
+      <figure class="shot glow reveal" style="--i:2">
+        <img src="assets/overview.png" width="1280" height="800" alt="Nadfny's overview: a drive usage bar split into worktrees, Docker, build output and caches, above ranked recommendations with the space each one frees">
+      </figure>
+    </div>
+  </section>
+
+  <section class="proof" aria-label="Measured results">
+    <div class="wrap">
+      <dl>
+        <div><dt>11 s</dt><dd>to scan three drives and 120,000 folders for build output</dd></div>
+        <div><dt>1.1 s</dt><dd>until removed worktrees leave the list, while files clear in the background</dd></div>
+        <div><dt>2x</dt><dd>faster deletes than Windows' own, without freezing the app</dd></div>
+        <div><dt>0</dt><dd>hand-written source files in the build output it offers to delete</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="features" aria-labelledby="features-h">
+    <div class="wrap">
+      <h2 id="features-h" class="reveal">Built for the mess developers make</h2>
+      <p class="section-lead reveal">Generic cleaners empty the Recycle Bin. Your space went to forgotten worktrees, Docker layers and a <code>node_modules</code> in every project you ever cloned.</p>
+
+      <div class="feat-row reveal">
+        <div class="feat-copy">
+          <h3>Every worktree, sized and labelled</h3>
+          <p>One list for every linked worktree across your repositories.</p>
+          <ul>
+            <li>Badges for merged, uncommitted changes, unpushed and never pushed.</li>
+            <li>A "Merged &amp; clean" filter finds the ones that are safe to drop.</li>
+            <li>Remove several at once, optionally with their local branches.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img loading="lazy" src="assets/worktrees.png" width="1280" height="800" alt="Worktrees grouped by repository, each with its branch, size, last commit, and Merged or 1 change badges"></figure>
+      </div>
+
+      <div class="feat-row flip reveal">
+        <div class="feat-copy">
+          <h3>Build output, by project and age</h3>
+          <p><code>node_modules</code>, <code>bin</code> and <code>obj</code>, <code>dist</code>, <code>target</code>, <code>.next</code>, <code>.venv</code> and more.</p>
+          <ul>
+            <li>Filter to projects untouched for 30 or 90 days.</li>
+            <li>Kept automatically if a folder holds git-tracked files or hand-written code.</li>
+            <li>Your next install or build brings it back.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img loading="lazy" src="assets/build-output.png" width="1280" height="800" alt="Build output filtered to projects untouched for 30 or more days, listing node_modules, bin, obj and dist folders with their sizes"></figure>
+      </div>
+
+      <div class="areas">
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-cube" aria-hidden="true"></i></span><div><h3>Docker</h3><p>Build cache, images, containers and volumes with real sizes, one-click prunes, and compaction of Docker's WSL disk so the space returns to Windows.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-archive-box" aria-hidden="true"></i></span><div><h3>Caches</h3><p>npm, pnpm, Yarn, NuGet, pip, Gradle, Maven, Playwright and Temp, plus Windows update leftovers through Windows' own Disk Cleanup.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-hard-drives" aria-hidden="true"></i></span><div><h3>All drives</h3><p>Point it at your project folders, or flip one switch to scan every local disk with live progress.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-desktop" aria-hidden="true"></i></span><div><h3>This PC</h3><p>CPU, GPU with real VRAM, every RAM stick and drive, with copy buttons. It even spots RAM running below its rated speed.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety" aria-labelledby="safety-h">
+    <div class="wrap safety-grid">
+      <div>
+        <h2 id="safety-h" class="reveal">Built to never lose your work</h2>
+        <p class="section-lead reveal">Deleting is the easy part. Nadfny is designed around not deleting the wrong thing.</p>
+        <figure class="shot reveal" style="margin-top:32px"><img loading="lazy" src="assets/removing.png" width="1280" height="800" alt="Three worktrees being removed in parallel, each with a live progress bar and the megabytes deleted so far"></figure>
+      </div>
+      <ul class="guarantees">
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Every delete names what it removes</strong><span>A confirmation shows exactly what goes and how big it is.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Unsaved work needs an extra yes</strong><span>Uncommitted changes, unpushed commits, locks, or a git status it could not read all count as risky.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Re-checked right before removal</strong><span>If you edited a worktree after the scan, it is kept.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Your source code stays</strong><span>Build output with git-tracked files or hand-written code inside is never deleted.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>System folders are off limits</strong><span>Windows, Program Files, your profile and AppData are refused by the deletion engine itself.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>Fast, visible, resumable</strong><span>Deletes run in the background with live progress and finish next launch if you close the app midway.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="download" aria-labelledby="download-h">
+    <div class="wrap">
+      <h2 id="download-h" class="reveal">Download</h2>
+      <p class="section-lead reveal">Free and open source. Both versions include everything they need, so there is nothing else to install.</p>
+      <div class="dl-grid">
+        <div class="dl-card featured reveal">
+          <h3>Installer</h3>
+          <p>Installs for your user only, with no administrator rights. Adds a Start menu entry and updates itself when a new version ships.</p>
+          <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>Download installer</a>
+          <span class="dl-file" data-file="msi">Nadfny-win-x64.msi</span>
+        </div>
+        <div class="dl-card reveal">
+          <h3>Portable</h3>
+          <p>Unzip anywhere and run <code>Nadfny.exe</code>. Nothing is installed; it tells you when a new version is out.</p>
+          <a class="btn secondary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip"><i class="ph ph-file-zip" aria-hidden="true"></i>Download portable zip</a>
+          <span class="dl-file" data-file="zip">Nadfny-portable-win-x64.zip</span>
+        </div>
+      </div>
+      <p class="note reveal"><strong>Requirements:</strong> Windows 10 or 11 (64-bit) with the WebView2 Runtime, which Windows 11 already includes. git and Docker are optional. Nadfny is not code-signed yet, so SmartScreen may warn the first time: choose <strong>More info</strong>, then <strong>Run anyway</strong>. Every release lists SHA-256 checksums on <a href="https://github.com/mfathy234/nadfny/releases/latest">GitHub</a>.</p>
+    </div>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-h">
+    <div class="wrap">
+      <h2 id="closing-h" class="reveal">Clean me.</h2>
+      <p class="section-lead reveal">Find out where your disk went in a few seconds.</p>
+      <div class="cta reveal">
+        <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>Download for Windows</a>
+        <a class="btn secondary" href="https://github.com/mfathy234/nadfny" target="_blank" rel="noopener noreferrer">View source</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-row">
+    <span>Nadfny <span data-version></span>, MIT licensed.</span>
+    <ul>
+      <li><a href="https://github.com/mfathy234/nadfny">GitHub</a></li>
+      <li><a href="https://github.com/mfathy234/nadfny/releases">Releases</a></li>
+      <li><a href="https://dawsha.pages.dev/">Dawsha, its sibling app</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="release.js" defer></script>
+<script src="motion.js" defer></script>
+</body>
+</html>

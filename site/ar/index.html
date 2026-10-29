@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نضّفني - استرجع مساحة القرص</title>
+<meta name="description" content="نضّفني يجد الجيجابايتات التي يخسرها المطوّرون في git worktrees وDocker وnode_modules والكاش، وينظّفها دون أن يلمس شغلك. مجاني لويندوز.">
+<link rel="canonical" href="https://nadfny.pages.dev/ar/">
+<link rel="alternate" hreflang="en" href="https://nadfny.pages.dev/">
+<link rel="alternate" hreflang="ar" href="https://nadfny.pages.dev/ar/">
+<meta name="theme-color" content="#0c0e12">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon.png" type="image/png" sizes="64x64">
+<link rel="apple-touch-icon" href="../assets/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nadfny">
+<meta property="og:locale" content="ar_EG">
+<meta property="og:title" content="نضّفني - استرجع مساحة القرص">
+<meta property="og:description" content="اعرف إيه اللي مالي القرص ونضّفه بأمان: git worktrees وDocker وملفات البناء والكاش. مجاني لويندوز.">
+<meta property="og:url" content="https://nadfny.pages.dev/ar/">
+<meta property="og:image" content="https://nadfny.pages.dev/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://nadfny.pages.dev/assets/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../vendor/phosphor/phosphor.css">
+<link rel="stylesheet" href="../style.css">
+<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#main">انتقل إلى المحتوى</a>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#top" aria-label="الصفحة الرئيسية لنضّفني"><img src="../favicon.svg" width="28" height="28" alt=""><span>نضّفني</span></a>
+    <nav aria-label="القائمة الرئيسية">
+      <a href="#features">المزايا</a>
+      <a href="#safety">الأمان</a>
+      <a href="#download">التحميل</a>
+      <a class="keep" href="https://github.com/mfathy234/nadfny" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+    <a class="lang-switch" lang="en" href="../">English</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 class="reveal" style="--i:0">استرجع مساحة <em>القرص</em>.</h1>
+        <p class="lead reveal" style="--i:1">نضّفني يلاقي الجيجابايتات اللي بتضيع على المطوّرين في git worktrees وDocker و<code>node_modules</code> والكاش، وينضّفها من غير ما يلمس شغلك.</p>
+        <div class="cta reveal" style="--i:2">
+          <a class="btn primary download" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi">
+            <i class="ph-fill ph-download-simple" aria-hidden="true"></i>
+            <span class="btn-label"><span class="btn-title">حمّل لويندوز</span><span class="btn-meta" data-meta="msi">ويندوز 10 و11، مجاني</span></span>
+          </a>
+          <a class="btn secondary" href="#download">النسخة المحمولة</a>
+        </div>
+      </div>
+      <figure class="shot glow reveal" style="--i:2">
+        <img src="../assets/overview.png" width="1280" height="800" alt="الشاشة الرئيسية في نضّفني: شريط استخدام القرص مقسّم إلى worktrees وDocker وملفات البناء والكاش، وتحته توصيات مرتّبة بالمساحة التي توفّرها كل واحدة">
+      </figure>
+    </div>
+  </section>
+
+  <section class="proof" aria-label="نتائج مقاسة">
+    <div class="wrap">
+      <dl>
+        <div><dt>11 ث</dt><dd>لفحص ثلاثة أقراص و120 ألف مجلد بحثًا عن ملفات البناء</dd></div>
+        <div><dt>1.1 ث</dt><dd>حتى تختفي الـ worktrees المحذوفة من القائمة، والملفات تتمسح في الخلفية</dd></div>
+        <div><dt>2x</dt><dd>أسرع في الحذف من ويندوز نفسه، من غير ما البرنامج يهنّج</dd></div>
+        <div><dt>0</dt><dd>ملفات كود مكتوبة بإيدك ضمن ملفات البناء اللي بيعرض حذفها</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="features" aria-labelledby="features-h">
+    <div class="wrap">
+      <h2 id="features-h" class="reveal">معمول للفوضى اللي بيعملها المطوّرين</h2>
+      <p class="section-lead reveal">المنظّفات العادية بتفضّي سلة المحذوفات وخلاص. المساحة الحقيقية راحت في worktrees منسية وطبقات Docker و<code>node_modules</code> في كل مشروع نزّلته في حياتك.</p>
+
+      <div class="feat-row reveal">
+        <div class="feat-copy">
+          <h3>كل worktree بحجمه وحالته</h3>
+          <p>قائمة واحدة لكل الـ worktrees في كل المستودعات.</p>
+          <ul>
+            <li>علامات لـ merged، وتعديلات مش متحفوظة، وكوميتات مش مرفوعة.</li>
+            <li>فلتر "Merged &amp; clean" يطلّعلك اللي حذفه آمن.</li>
+            <li>احذف كذا واحد مرة واحدة، ومعاهم الفروع لو حابب.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img loading="lazy" src="../assets/worktrees.png" width="1280" height="800" alt="قائمة الـ worktrees مجمّعة حسب المستودع، ولكل واحد الفرع والحجم وآخر كوميت وعلامات الحالة"></figure>
+      </div>
+
+      <div class="feat-row flip reveal">
+        <div class="feat-copy">
+          <h3>ملفات البناء حسب المشروع وعمره</h3>
+          <p><code>node_modules</code> و<code>bin</code> و<code>obj</code> و<code>dist</code> و<code>target</code> و<code>.next</code> و<code>.venv</code> وغيرهم.</p>
+          <ul>
+            <li>فلتر للمشاريع اللي ما اتلمستش من 30 أو 90 يوم.</li>
+            <li>أي مجلد فيه ملفات متتبّعة في git أو كود مكتوب بإيدك بيتساب تلقائيًا.</li>
+            <li>أول install أو build بعدها يرجّعها.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img loading="lazy" src="../assets/build-output.png" width="1280" height="800" alt="ملفات البناء مفلترة على المشاريع اللي ما اتلمستش من 30 يوم أو أكثر، مع حجم كل مجلد"></figure>
+      </div>
+
+      <div class="areas">
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-cube" aria-hidden="true"></i></span><div><h3>Docker</h3><p>الـ build cache والصور والحاويات والـ volumes بأحجامها الحقيقية، وتنظيف بضغطة، وضغط قرص WSL بتاع Docker عشان المساحة ترجع لويندوز.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-archive-box" aria-hidden="true"></i></span><div><h3>الكاش</h3><p>npm وpnpm وYarn وNuGet وpip وGradle وMaven وPlaywright وTemp، وكمان بقايا تحديثات ويندوز عن طريق أداة Disk Cleanup نفسها.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-hard-drives" aria-hidden="true"></i></span><div><h3>كل الأقراص</h3><p>وجّهه لفولدرات مشاريعك، أو شغّل مفتاح واحد يفحص كل الأقراص مع تقدّم مباشر.</p></div></div>
+        <div class="area reveal"><span class="area-icon"><i class="ph ph-desktop" aria-hidden="true"></i></span><div><h3>جهازك</h3><p>المعالج وكارت الشاشة بذاكرته الحقيقية وكل شريحة رام وكل قرص، مع أزرار نسخ. وبينبّهك لو الرام شغالة أقل من سرعتها.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety" aria-labelledby="safety-h">
+    <div class="wrap safety-grid">
+      <div>
+        <h2 id="safety-h" class="reveal">معمول عشان ما تخسرش شغلك أبدًا</h2>
+        <p class="section-lead reveal">الحذف هو الجزء السهل. نضّفني متصمّم أساسًا عشان ما يحذفش الحاجة الغلط.</p>
+        <figure class="shot reveal" style="margin-top:32px"><img loading="lazy" src="../assets/removing.png" width="1280" height="800" alt="ثلاثة worktrees بيتحذفوا مع بعض، ولكل واحد شريط تقدّم مباشر"></figure>
+      </div>
+      <ul class="guarantees">
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>كل حذف بيقولك هيمسح إيه بالظبط</strong><span>رسالة تأكيد فيها الاسم والحجم قبل أي حاجة.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>الشغل اللي مش متحفوظ محتاج موافقة زيادة</strong><span>تعديلات مش متعمل لها commit، أو كوميتات مش مرفوعة، أو قفل، أو حالة git ما اتقرتش: كلها بتعتبر خطر.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>مراجعة تانية قبل الحذف مباشرة</strong><span>لو عدّلت في worktree بعد الفحص، بيتساب.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>الكود بتاعك في أمان</strong><span>ملفات البناء اللي جواها ملفات متتبّعة في git أو كود مكتوب بإيدك عمرها ما بتتمسح.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>فولدرات النظام ممنوعة</strong><span>Windows وProgram Files وفولدر المستخدم وAppData مرفوضين من محرّك الحذف نفسه.</span></div></li>
+        <li class="reveal"><span class="check"><i class="ph-fill ph-check" aria-hidden="true"></i></span><div><strong>سريع، وقدامك، وبيكمّل</strong><span>الحذف بيشتغل في الخلفية بتقدّم مباشر، ولو قفلت البرنامج في النص بيكمّل أول ما تفتحه.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="download" aria-labelledby="download-h">
+    <div class="wrap">
+      <h2 id="download-h" class="reveal">التحميل</h2>
+      <p class="section-lead reveal">مجاني ومفتوح المصدر. النسختين فيهم كل اللي محتاجينه، مفيش حاجة تانية تنزّلها.</p>
+      <div class="dl-grid">
+        <div class="dl-card featured reveal">
+          <h3>المثبّت</h3>
+          <p>بيتثبّت ليك انت بس من غير صلاحيات أدمن، وبيضيف اختصار في قائمة ابدأ، وبيحدّث نفسه لما ينزل إصدار جديد.</p>
+          <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>حمّل المثبّت</a>
+          <span class="dl-file" data-file="msi">Nadfny-win-x64.msi</span>
+        </div>
+        <div class="dl-card reveal">
+          <h3>النسخة المحمولة</h3>
+          <p>فك الضغط في أي مكان وشغّل <code>Nadfny.exe</code>. مفيش تثبيت، وبيقولك لما يكون فيه إصدار جديد.</p>
+          <a class="btn secondary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="zip"><i class="ph ph-file-zip" aria-hidden="true"></i>حمّل الملف المضغوط</a>
+          <span class="dl-file" data-file="zip">Nadfny-portable-win-x64.zip</span>
+        </div>
+      </div>
+      <p class="note reveal"><strong>المتطلبات:</strong> ويندوز 10 أو 11 (64 بت) مع WebView2 Runtime، وده موجود أصلًا في ويندوز 11. git وDocker اختياريين. نضّفني لسه مش موقّع رقميًا، فممكن SmartScreen يحذّرك أول مرة: اختار <strong>More info</strong> وبعدين <strong>Run anyway</strong>. كل إصدار عليه بصمات SHA-256 على <a href="https://github.com/mfathy234/nadfny/releases/latest">GitHub</a>.</p>
+    </div>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-h">
+    <div class="wrap">
+      <h2 id="closing-h" class="reveal">نضّفني.</h2>
+      <p class="section-lead reveal">اعرف مساحتك راحت فين في ثواني.</p>
+      <div class="cta reveal">
+        <a class="btn primary" href="https://github.com/mfathy234/nadfny/releases/latest" data-dl="msi"><i class="ph-fill ph-download-simple" aria-hidden="true"></i>حمّل لويندوز</a>
+        <a class="btn secondary" href="https://github.com/mfathy234/nadfny" target="_blank" rel="noopener noreferrer">الكود المصدري</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-row">
+    <span>نضّفني <bdi data-version></bdi>، برخصة MIT.</span>
+    <ul>
+      <li><a href="https://github.com/mfathy234/nadfny">GitHub</a></li>
+      <li><a href="https://github.com/mfathy234/nadfny/releases">الإصدارات</a></li>
+      <li><a href="https://dawsha.pages.dev/ar/">دوشة، البرنامج الشقيق</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../release.js" defer></script>
+<script src="../motion.js" defer></script>
+</body>
+</html>
