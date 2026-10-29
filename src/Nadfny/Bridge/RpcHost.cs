@@ -9,6 +9,7 @@ using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
 using Nadfny.Features.History;
 using Nadfny.Features.Finder;
+using Nadfny.Features.GitHealth;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
 using Nadfny.Features.SystemSpace;
@@ -29,6 +30,7 @@ public sealed class RpcHost
     private readonly Func<string?> _pickFolder;
     private readonly Func<string, bool> _setClipboard;
     private readonly WorktreeService _worktrees = new();
+    private readonly GitHealthService _gitHealth = new();
     private readonly DockerService _docker = new();
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
@@ -93,6 +95,11 @@ public sealed class RpcHost
 
         "worktrees.scan" => await Scoped("worktrees", ct => _history.CaptureAsync(_worktrees.ScanAsync(_settings.Roots, w => Emit("worktrees.item", w), Progress("worktrees"), ct), ct)),
         "worktrees.remove" => await _worktrees.RemoveAsync(Str(p, "path"), Bool(p, "deleteBranch"), Bool(p, "allowUnsaved"), Op(p), CancellationToken.None),
+
+        "gitHealth.scan" => await Scoped("gitHealth", ct => _gitHealth.ScanAsync(_settings.Roots, r => Emit("gitHealth.item", r), Progress("gitHealth"), ct)),
+        "gitHealth.gc" => await _gitHealth.GcAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "gitHealth.lfsPrune" => await _gitHealth.LfsPruneAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "gitHealth.deleteBranches" => await _gitHealth.DeleteBranchesAsync(Str(p, "id"), Strings(p, "branches"), Op(p), CancellationToken.None),
 
         "docker.scan" => await Scoped("docker", ct => _history.CaptureAsync(_docker.ScanAsync(ct), ct)),
         "docker.prune" => await _docker.PruneAsync(Str(p, "kind"), Op(p), CancellationToken.None),
@@ -256,6 +263,11 @@ public sealed class RpcHost
 
     private static List<string> Paths(JsonElement p) =>
         p.ValueKind == JsonValueKind.Object && p.TryGetProperty("paths", out var arr) && arr.ValueKind == JsonValueKind.Array
+            ? arr.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "").Where(s => s.Length > 0).ToList()
+            : [];
+
+    private static List<string> Strings(JsonElement p, string name) =>
+        p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var arr) && arr.ValueKind == JsonValueKind.Array
             ? arr.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "").Where(s => s.Length > 0).ToList()
             : [];
 
