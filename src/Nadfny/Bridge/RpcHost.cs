@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using Nadfny.Core;
+using Nadfny.Features.AiModels;
 using Nadfny.Features.Apps;
 using Nadfny.Features.Artifacts;
 using Nadfny.Features.Caches;
@@ -33,6 +34,7 @@ public sealed class RpcHost
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
     private readonly ToolchainService _toolchains = new();
+    private readonly AiModelService _aiModels = new();
     private readonly ExploreService _explore = new();
     private readonly FinderService _finder = new();
     private readonly WindowsCleanupService _windows = new();
@@ -105,6 +107,9 @@ public sealed class RpcHost
 
         "caches.scan" => await Scoped("caches", ct => _history.CaptureAsync(_caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct), ct)),
         "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None, Str(p, "path") is { Length: > 0 } path ? path : null),
+
+        "aiModels.scan" => await Scoped("aiModels", ct => _aiModels.ScanAsync(m => Emit("aiModels.item", m), Progress("aiModels"), ct)),
+        "aiModels.remove" => await _aiModels.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
 
         "toolchains.scan" => await Scoped("toolchains", ct => _toolchains.ScanAsync(_settings.Roots, t => Emit("toolchains.item", t), Progress("toolchains"), ct)),
         "toolchains.remove" => await _toolchains.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),

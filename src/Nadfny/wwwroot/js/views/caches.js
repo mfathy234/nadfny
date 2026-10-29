@@ -8,6 +8,8 @@ import { systemSpaceSection } from './system-space.js';
 import { growthSize } from './history.js';
 import { scanToolchains } from '../toolchains-actions.js';
 import { toolchainsSection } from './toolchains.js';
+import { scanAiModels } from '../ai-models-actions.js';
+import { aiModelsSection } from './ai-models.js';
 
 export const cachesView = {
   id: 'caches',
@@ -22,8 +24,8 @@ export const cachesView = {
 
   actions() {
     return [button('Rescan', {
-      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning' || state.toolchains.status === 'scanning',
-      onClick: () => Promise.allSettled([scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
+      icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning' || state.toolchains.status === 'scanning' || state.aiModels.status === 'scanning',
+      onClick: () => Promise.allSettled([scanCaches(), scanToolchains(), scanAiModels(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
     })];
   },
 
@@ -41,6 +43,7 @@ export const cachesView = {
           : !items.length && st.status === 'scanning' ? skeletonList(5) : items.length
           ? h('div', { class: 'list' }, items.map((c) => cacheRow(c, max)))
           : st.status === 'scanning' ? skeletonList(5) : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
+      aiModelsSection(),
       toolchainsSection(),
       windowsSection());
   },
