@@ -16,6 +16,7 @@ using Nadfny.Features.SystemSpace;
 using Nadfny.Features.Toolchains;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
+using Nadfny.Features.Wsl;
 using Nadfny.Features.Worktrees;
 
 namespace Nadfny.Bridge;
@@ -31,6 +32,7 @@ public sealed class RpcHost
     private readonly Func<string, bool> _setClipboard;
     private readonly WorktreeService _worktrees = new();
     private readonly DockerService _docker = new();
+    private readonly WslService _wsl = new();
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
     private readonly ToolchainService _toolchains = new();
@@ -100,6 +102,9 @@ public sealed class RpcHost
         "docker.prune" => await _docker.PruneAsync(Str(p, "kind"), Op(p), CancellationToken.None),
         "docker.remove" => await _docker.RemoveAsync(Str(p, "kind"), Str(p, "id"), Op(p), CancellationToken.None),
         "docker.compact" => await _docker.CompactDiskAsync(Op(p), CancellationToken.None),
+        "wsl.scan" => await Scoped("wsl", ct => _wsl.ScanAsync(ct)),
+        "wsl.compact" => await _wsl.CompactAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "wsl.sparse" => await _wsl.EnableSparseAsync(Str(p, "id"), CancellationToken.None),
 
         "artifacts.scan" => await Scoped("artifacts", ct => _history.CaptureAsync(_artifacts.ScanAsync(_settings.Roots, a => Emit("artifacts.item", a), Progress("artifacts"), ct), ct)),
         "artifacts.remove" => await RemoveArtifacts(p),
