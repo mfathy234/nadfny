@@ -5,11 +5,13 @@ namespace Nadfny.Core;
 /// <summary>Fast, allocation-light recursive size calculation. Skips junctions and symlinks so a tree is never counted twice.</summary>
 public static class DirectorySizer
 {
+    // Reparse points are not skipped wholesale: cloud placeholders (OneDrive Files On-Demand) are reparse *files* and
+    // must still be listed. Linked *folders* (junctions, symlinks, mount points) are never entered.
     private static readonly EnumerationOptions RecursiveOptions = new()
     {
         RecurseSubdirectories = true,
         IgnoreInaccessible = true,
-        AttributesToSkip = FileAttributes.ReparsePoint,
+        AttributesToSkip = 0,
         ReturnSpecialDirectories = false,
     };
 
@@ -17,9 +19,11 @@ public static class DirectorySizer
     {
         RecurseSubdirectories = false,
         IgnoreInaccessible = true,
-        AttributesToSkip = FileAttributes.ReparsePoint,
+        AttributesToSkip = 0,
         ReturnSpecialDirectories = false,
     };
+
+    private static bool IsLinkedFolder(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) != 0;
 
     public readonly record struct SizeResult(long Bytes, long Files, DateTime LastWriteUtc);
 
@@ -65,10 +69,11 @@ public static class DirectorySizer
     {
         long bytes = 0, files = 0, lastTicks = 0;
         var e = new FileSystemEnumerable<(long Len, long Ticks)>(path,
-            (ref FileSystemEntry entry) => (entry.Length, entry.LastWriteTimeUtc.UtcTicks),
+            (ref FileSystemEntry entry) => (OnDisk(ref entry), entry.LastWriteTimeUtc.UtcTicks),
             RecursiveOptions)
         {
             ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory,
+            ShouldRecursePredicate = (ref FileSystemEntry entry) => !IsLinkedFolder(ref entry),
         };
         try
         {
@@ -89,12 +94,48 @@ public static class DirectorySizer
         try
         {
             return new FileSystemEnumerable<(bool, string, long, long)>(path,
-                (ref FileSystemEntry entry) => (entry.IsDirectory, entry.ToFullPath(), entry.Length, entry.LastWriteTimeUtc.UtcTicks),
-                ShallowOptions).ToList();
+                (ref FileSystemEntry entry) => (entry.IsDirectory, entry.ToFullPath(), entry.IsDirectory ? 0 : OnDisk(ref entry), entry.LastWriteTimeUtc.UtcTicks),
+                ShallowOptions)
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => !IsLinkedFolder(ref entry),
+            }.ToList();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return [];
         }
     }
+
+    // Cloud placeholders: the file is listed, but its data lives online (FILE_ATTRIBUTE_RECALL_ON_OPEN / _ON_DATA_ACCESS).
+    private const FileAttributes RecallOnOpen = (FileAttributes)0x40000, RecallOnDataAccess = (FileAttributes)0x400000;
+    private const FileAttributes CloudOnly = FileAttributes.Offline | RecallOnOpen | RecallOnDataAccess;
+    private const FileAttributes Packed = FileAttributes.SparseFile | FileAttributes.Compressed;
+
+    /// <summary>
+    /// A file's size on disk. Sparse files (virtual disks, emulator images) and NTFS-compressed files report a logical
+    /// length far above what they use, so those ask Windows for the allocated size; cloud-only files use nothing.
+    /// </summary>
+    private static long OnDisk(ref FileSystemEntry entry)
+    {
+        var attrs = entry.Attributes;
+        if ((attrs & CloudOnly) != 0) return 0;
+        return (attrs & Packed) == 0 ? entry.Length : Allocated(entry.ToFullPath(), entry.Length);
+    }
+
+    /// <inheritdoc cref="OnDisk(ref FileSystemEntry)"/>
+    public static long OnDisk(FileInfo f)
+    {
+        var attrs = f.Attributes;
+        if ((attrs & CloudOnly) != 0) return 0;
+        return (attrs & Packed) == 0 ? f.Length : Allocated(f.FullName, f.Length);
+    }
+
+    private static long Allocated(string path, long fallback)
+    {
+        var low = GetCompressedFileSizeW(path, out var high);
+        return low == uint.MaxValue && System.Runtime.InteropServices.Marshal.GetLastPInvokeError() != 0 ? fallback : ((long)high << 32) | low;
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetCompressedFileSizeW(string path, out uint high);
 }

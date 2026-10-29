@@ -16,7 +16,7 @@ public sealed record UpdateInfo(
     long? DownloadBytes);
 
 /// <summary>
-/// Checks GitHub Releases for a newer Nadfny. Installed copies download the new MSI, verify it against the
+/// Checks GitHub Releases for a newer Nadfny. Installed copies download the new setup.exe (or the MSI for older releases), verify it against the
 /// release's SHA256SUMS.txt, and upgrade in place (per-user, no admin). Portable copies only get a link.
 /// </summary>
 public sealed class UpdateService
@@ -47,7 +47,7 @@ public sealed class UpdateService
         _latest = release;
         var available = release.Version is not null && IsNewer(release.Version, CurrentVersion);
         return new UpdateInfo(CurrentVersion, IsInstalled ? "installed" : "portable", available,
-            release.Version, release.Notes, release.HtmlUrl, release.Msi?.Size);
+            release.Version, release.Notes, release.HtmlUrl, release.Installer?.Size);
     }
 
     /// <summary>Downloads the new installer with progress and verifies its SHA-256 before it can be run.</summary>
@@ -55,7 +55,7 @@ public sealed class UpdateService
     {
         if (!IsInstalled) throw new InvalidOperationException("This is the portable version. Download the new zip from the release page.");
         var release = _latest ?? throw new InvalidOperationException("Check for updates first.");
-        var msi = release.Msi ?? throw new InvalidOperationException("This release has no installer.");
+        var msi = release.Installer ?? throw new InvalidOperationException("This release has no installer.");
         var dir = Path.Combine(Path.GetTempPath(), "Nadfny-update");
         Directory.CreateDirectory(dir);
         var target = Path.Combine(dir, Path.GetFileName(msi.Name));
@@ -95,21 +95,21 @@ public sealed class UpdateService
     }
 
     /// <summary>
-    /// Runs the MSI upgrade after Nadfny exits, then starts the new version. The MSI's MajorUpgrade replaces the
-    /// old one in place. Returns once the helper is launched; the caller then closes the app.
+    /// Runs the installer after Nadfny exits, then starts the new version. The MSI's MajorUpgrade replaces the
+    /// old one in place, whether it is run directly or through the setup.exe bundle. Returns once the helper is launched; the caller then closes the app.
     /// </summary>
     public void InstallAndRestart()
     {
-        var msi = _downloaded ?? throw new InvalidOperationException("Download the update first.");
+        var installer = _downloaded ?? throw new InvalidOperationException("Download the update first.");
         var exe = Path.Combine(AppContext.BaseDirectory, "Nadfny.exe");
         var pid = Environment.ProcessId;
         // Wait for this process to exit, upgrade with a small progress window, then relaunch.
         var script = $$"""
             $ErrorActionPreference = 'SilentlyContinue'
             Wait-Process -Id {{pid}} -Timeout 30
-            $p = Start-Process msiexec.exe -ArgumentList '/i', '"{{msi}}"', '/passive', '/norestart' -Wait -PassThru
+            $p = {{StartInstaller(installer)}}
             Start-Process '{{exe}}'
-            if ($p.ExitCode -eq 0) { Remove-Item '{{msi}}' }
+            if ($p.ExitCode -eq 0) { Remove-Item '{{installer}}' }
             """;
         var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
         Process.Start(new ProcessStartInfo("powershell.exe", $"-NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand {encoded}")
@@ -118,6 +118,10 @@ public sealed class UpdateService
             CreateNoWindow = true,
         });
     }
+
+    internal static string StartInstaller(string path) => path.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)
+        ? $"Start-Process msiexec.exe -ArgumentList '/i', '\"{path}\"', '/passive', '/norestart' -Wait -PassThru"
+        : $"Start-Process '{path}' -ArgumentList '/passive', '/norestart' -Wait -PassThru";
 
     /// <summary>Opens the release page; only GitHub release URLs of this repo are allowed.</summary>
     public static void OpenReleasePage(string url)
@@ -128,7 +132,7 @@ public sealed class UpdateService
     }
 
     internal sealed record Asset(string Name, string Url, long Size);
-    internal sealed record Release(string? Version, string? Notes, string? HtmlUrl, Asset? Msi, Asset? Sums);
+    internal sealed record Release(string? Version, string? Notes, string? HtmlUrl, Asset? Installer, Asset? Sums);
 
     internal static Release ParseRelease(string json)
     {
@@ -144,7 +148,8 @@ public sealed class UpdateService
             tag is null ? null : NormalizeVersion(tag),
             Str(r, "body"),
             Str(r, "html_url"),
-            assets.FirstOrDefault(x => x.Name.EndsWith("-win-x64.msi", StringComparison.OrdinalIgnoreCase)),
+            assets.FirstOrDefault(x => x.Name.EndsWith("-setup.exe", StringComparison.OrdinalIgnoreCase))
+                ?? assets.FirstOrDefault(x => x.Name.EndsWith("-win-x64.msi", StringComparison.OrdinalIgnoreCase)),
             assets.FirstOrDefault(x => x.Name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase)));
     }
 

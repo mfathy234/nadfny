@@ -5,6 +5,7 @@ import { fraction, scanPanel } from './views/progress.js';
 import { h, icon, toast } from './dom.js';
 import { bytes } from './format.js';
 import { setRenderer, state, update } from './store.js';
+import { appsView } from './views/apps.js';
 import { artifactSelectionBar, artifactsView } from './views/artifacts.js';
 import { cachesView } from './views/caches.js';
 import { dockerUsed, dockerView } from './views/docker.js';
@@ -13,7 +14,7 @@ import { overviewView } from './views/overview.js';
 import { systemView } from './views/system.js';
 import { worktreeSelectionBar, worktreesView } from './views/worktrees.js';
 
-const VIEWS = [overviewView, worktreesView, dockerView, artifactsView, cachesView, exploreView, systemView];
+const VIEWS = [overviewView, worktreesView, dockerView, artifactsView, cachesView, appsView, exploreView, systemView];
 const SELECTION_BARS = { worktrees: worktreeSelectionBar, artifacts: artifactSelectionBar };
 
 const $ = (id) => document.getElementById(id);
@@ -24,6 +25,7 @@ function navSize(id) {
     case 'worktrees': return [state.worktrees.status, sum(state.worktrees.items)];
     case 'artifacts': return [state.artifacts.status, sum(state.artifacts.items)];
     case 'caches': return [state.caches.status, sum(state.caches.items)];
+    case 'apps': return [state.apps.status, [...state.apps.items.values()].reduce((a, x) => a + (x.appBytes ?? 0) + x.dataBytes, 0)];
     case 'docker': {
       const r = state.docker.report;
       return [state.docker.status, r?.disk?.bytes ?? dockerUsed(r)];
@@ -134,7 +136,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     VIEWS.find((v) => v.id === state.view)?.actions()[0]?.click();
   }
-  if (e.ctrlKey && /^[1-7]$/.test(e.key)) {
+  if (e.ctrlKey && /^[1-8]$/.test(e.key)) {
     e.preventDefault();
     update((s) => { s.view = VIEWS[Number(e.key) - 1].id; });
   }

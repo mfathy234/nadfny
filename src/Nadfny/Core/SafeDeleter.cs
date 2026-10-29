@@ -19,7 +19,7 @@ public static class SafeDeleter
         EnsureDeletable(path);
         if (File.Exists(path))
         {
-            var length = new FileInfo(path).Length;
+            var length = DirectorySizer.OnDisk(new FileInfo(path));
             File.SetAttributes(path, FileAttributes.Normal);
             File.Delete(path);
             counter?.Add(length);
@@ -75,6 +75,15 @@ public static class SafeDeleter
     {
         if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("No path given.");
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        CheckDeletable(full);
+        // The same folder can hide behind an 8.3 name (C:\PROGRA~2), a junction in its parents or a \\?\ prefix,
+        // none of which the lexical checks see. Check the real path Windows resolves it to as well.
+        var canonical = Canonical(full);
+        if (!canonical.Equals(full, StringComparison.OrdinalIgnoreCase)) CheckDeletable(canonical);
+    }
+
+    private static void CheckDeletable(string full)
+    {
         if (Path.GetPathRoot(full) is { } root && string.Equals(Path.TrimEndingDirectorySeparator(root), full, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Refusing to delete a drive root.");
         foreach (var p in ProtectedRoots)
@@ -93,6 +102,46 @@ public static class SafeDeleter
             .Select(Environment.GetFolderPath)
             .Where(p => !string.IsNullOrEmpty(p))
             .ToArray();
+
+    /// <summary>
+    /// The path Windows really resolves to: long names instead of 8.3 short names, junctions in its parents followed,
+    /// no \\?\ prefix. A link itself stays the link (it is removed as a link); only the folder holding it is resolved.
+    /// Falls back to the plain full path when the item does not exist or cannot be opened.
+    /// </summary>
+    public static string Canonical(string path)
+    {
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        try
+        {
+            if ((File.GetAttributes(full) & FileAttributes.ReparsePoint) != 0)
+            {
+                var parent = Path.GetDirectoryName(full);
+                return parent is null ? full : Path.Combine(Resolve(parent) ?? parent, Path.GetFileName(full));
+            }
+            return Resolve(full) ?? full;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return full; }
+    }
+
+    private static string? Resolve(string path)
+    {
+        const uint ShareAll = 0x7, OpenExisting = 3, BackupSemantics = 0x02000000; // backup semantics: folders open too
+        using var handle = CreateFileW(path, 0, ShareAll, IntPtr.Zero, OpenExisting, BackupSemantics, IntPtr.Zero);
+        if (handle.IsInvalid) return null;
+        var buffer = new char[1024];
+        var n = GetFinalPathNameByHandleW(handle, buffer, (uint)buffer.Length, 0);
+        if (n == 0 || n >= buffer.Length) return null;
+        var resolved = new string(buffer, 0, (int)n);
+        if (resolved.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) resolved = @"\\" + resolved[8..];
+        else if (resolved.StartsWith(@"\\?\", StringComparison.Ordinal)) resolved = resolved[4..];
+        return Path.TrimEndingDirectorySeparator(resolved);
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetFinalPathNameByHandleW(Microsoft.Win32.SafeHandles.SafeFileHandle handle, char[] buffer, uint size, uint flags);
 
     public static bool IsUnder(string path, string root)
     {
@@ -146,7 +195,7 @@ public static class SafeDeleter
         {
             try
             {
-                var length = f.Length; // read before Delete(): deleting clears the cached size
+                var length = DirectorySizer.OnDisk(f); // read before Delete(): deleting clears the cached size
                 if ((f.Attributes & (FileAttributes.ReadOnly | FileAttributes.System | FileAttributes.Hidden)) != 0)
                     f.Attributes = FileAttributes.Normal;
                 f.Delete();

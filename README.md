@@ -29,6 +29,8 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 | **Docker** | Build cache, images, containers and volumes with their real sizes, one-click prunes, and compaction of Docker's WSL disk file so freed space actually returns to Windows. |
 | **Build output** | `node_modules`, `bin`/`obj`, `dist`, `target`, `.next`, `.venv` and more, grouped by project, filterable by age ("untouched for 30+ days"). |
 | **Caches** | npm, pnpm, Yarn, NuGet, pip, Gradle, Maven, Playwright browsers and Temp, plus Windows update leftovers through Windows' own Disk Cleanup. |
+| **Apps & games** | Every installed app and game with its program size, the data it keeps in AppData and ProgramData, and its caches. Clear an app's cache in one click, uninstall it through its own uninstaller, then review the folders it left behind (they go to the Recycle Bin). Games are found in Steam, Epic, Xbox, GOG, Ubisoft, EA and Battle.net, and also in plain folders such as `D:\Games\Racing\…`, recognized by their engine files (Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py). |
+| **Recycle Bin** | How much the Bin holds on each drive, and emptying it, since deleted files only free space once it is emptied. |
 | **Explore** | Drill into any drive or folder by size, reveal in Explorer, or delete to the Recycle Bin. |
 | **This PC** | CPU, GPU (with real VRAM and clocks), every RAM stick, every drive (NVMe, SATA, HDD), displays, motherboard and BIOS, each with a copy button. It even tells you when your RAM is running below its rated speed. |
 
@@ -63,10 +65,11 @@ Worktree folders are moved aside instantly, git lets go of them, and the files a
 
 Get the latest version from [Releases](https://github.com/mfathy234/nadfny/releases/latest):
 
-- **`Nadfny-<version>-win-x64.msi`**: installer. Installs for your user only (no administrator rights), adds a Start menu entry, and upgrades in place.
+- **`Nadfny-<version>-setup.exe`**: installer (recommended). Installs for your user only (no administrator rights), adds a Start menu entry, and upgrades in place.
+- **`Nadfny-<version>-win-x64.msi`**: the same installer as a bare MSI, for IT and scripted installs.
 - **`Nadfny-<version>-portable-win-x64.zip`**: portable. Unzip anywhere and run `Nadfny.exe`. Nothing to install.
 
-Both include the .NET runtime, so there is nothing else to download.
+All of them include the .NET runtime, so there is nothing else to download.
 
 **Updates:** Nadfny checks GitHub for a new release shortly after it starts and every few hours (or use *Check for updates* in the sidebar). The installed version downloads the new installer, verifies it against the release's SHA-256 checksums, and upgrades in place when you choose *Restart to update*. The portable version shows the update and links to the release page.
 
@@ -92,10 +95,10 @@ git clone https://github.com/mfathy234/nadfny.git
 cd nadfny
 dotnet run --project src/Nadfny          # run it
 dotnet test tests/Nadfny.Tests           # run the tests
-pwsh build/release.ps1                   # build the portable zip and the MSI into ./artifacts
+pwsh build/release.ps1                   # build the portable zip, MSI and setup.exe into ./artifacts
 ```
 
-The installer is built with [WiX Toolset](https://wixtoolset.org/), restored automatically as a local `dotnet` tool.
+The installer is built with [WiX Toolset](https://wixtoolset.org/), restored automatically as a local `dotnet` tool (the setup.exe also uses the `WixToolset.Bal.wixext` extension, which `build/release.ps1` installs on first run).
 
 ### How it is put together
 
@@ -110,7 +113,7 @@ src/Nadfny/
   Bridge/      JSON RPC between the UI and the backend
   wwwroot/     the interface
 tests/         unit and integration tests (real git repos and file trees in a temp folder)
-installer/     WiX source for the MSI
+installer/     WiX sources for the MSI and the setup.exe bundle
 build/         release script
 ```
 
