@@ -10,13 +10,13 @@ export const state = {
   docker: { status: 'idle', error: null, report: null, tab: 'images' },
   artifacts: { ...scan(), kind: 'all', age: 0, expanded: new Set() },
   caches: scan(),
-  apps: { ...scan(), filter: 'all', query: '', expanded: new Set() },
+  apps: { ...scan(), filter: 'all', query: '', expanded: new Set(), queueRunning: false },
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },
   system: { status: 'idle', error: null, info: null },
   update: { status: 'idle', error: null, info: null },
   explore: { path: null, status: 'idle', error: null, items: new Map() },
-  selection: { worktrees: new Set(), artifacts: new Set() },
+  selection: { worktrees: new Set(), artifacts: new Set(), apps: new Set() },
   busy: new Set(),
   ops: new Map(), // running host actions with live progress (see ops.js)
   batch: null, // { label, count, done, failed, freedBytes } while a multi-item removal runs

@@ -5,7 +5,7 @@ import { fraction, scanPanel } from './views/progress.js';
 import { h, icon, toast } from './dom.js';
 import { bytes } from './format.js';
 import { setRenderer, state, update } from './store.js';
-import { appsView } from './views/apps.js';
+import { appsSelectionBar, appsView } from './views/apps.js';
 import { artifactSelectionBar, artifactsView } from './views/artifacts.js';
 import { cachesView } from './views/caches.js';
 import { dockerUsed, dockerView } from './views/docker.js';
@@ -15,7 +15,7 @@ import { systemView } from './views/system.js';
 import { worktreeSelectionBar, worktreesView } from './views/worktrees.js';
 
 const VIEWS = [overviewView, worktreesView, dockerView, artifactsView, cachesView, appsView, exploreView, systemView];
-const SELECTION_BARS = { worktrees: worktreeSelectionBar, artifacts: artifactSelectionBar };
+const SELECTION_BARS = { worktrees: worktreeSelectionBar, artifacts: artifactSelectionBar, apps: appsSelectionBar };
 
 const $ = (id) => document.getElementById(id);
 
