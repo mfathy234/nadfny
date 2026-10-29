@@ -14,6 +14,7 @@ export const state = {
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },
   system: { status: 'idle', error: null, info: null },
+  systemSpace: { status: 'idle', error: null, info: null },
   update: { status: 'idle', error: null, info: null },
   explore: { path: null, status: 'idle', error: null, items: new Map() },
   selection: { worktrees: new Set(), artifacts: new Set() },

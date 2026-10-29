@@ -8,6 +8,7 @@ import { setRenderer, state, update } from './store.js';
 import { appsView } from './views/apps.js';
 import { artifactSelectionBar, artifactsView } from './views/artifacts.js';
 import { cachesView } from './views/caches.js';
+import { scanSystemSpace } from './system-space-actions.js';
 import { dockerUsed, dockerView } from './views/docker.js';
 import { exploreView } from './views/explore.js';
 import { overviewView } from './views/overview.js';
@@ -148,6 +149,7 @@ document.addEventListener('keydown', (e) => {
 render();
 startUpdateChecks();
 loadSystemInfo(); // read-only and slow-ish: start now so This PC is ready when opened
+scanSystemSpace();
 loadInfo()
   .then(() => scanAll())
   .catch((err) => toast(err.message, 'bad'));
