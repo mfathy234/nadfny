@@ -50,48 +50,58 @@ public sealed class UpdateService
             release.Version, release.Notes, release.HtmlUrl, release.Installer?.Size);
     }
 
-    /// <summary>Downloads the new installer with progress and verifies its SHA-256 before it can be run.</summary>
+    /// <summary>
+    /// Downloads the new installer with progress, resuming a partial download from an earlier try, and verifies its
+    /// SHA-256 before it can be run. An installer already downloaded and verified is reused.
+    /// </summary>
     public async Task<string> DownloadAsync(OpReporter op, CancellationToken ct)
     {
         if (!IsInstalled) throw new InvalidOperationException("This is the portable version. Download the new zip from the release page.");
         var release = _latest ?? throw new InvalidOperationException("Check for updates first.");
-        var msi = release.Installer ?? throw new InvalidOperationException("This release has no installer.");
+        var installer = release.Installer ?? throw new InvalidOperationException("This release has no installer.");
         var dir = Path.Combine(Path.GetTempPath(), "Nadfny-update");
         Directory.CreateDirectory(dir);
-        var target = Path.Combine(dir, Path.GetFileName(msi.Name));
+        var target = Path.Combine(dir, Path.GetFileName(installer.Name));
+        RemoveOtherDownloads(dir, target);
 
-        op.Phase($"Downloading Nadfny {release.Version}", msi.Size);
-        using (var res = await Http.GetAsync(msi.Url, HttpCompletionOption.ResponseHeadersRead, ct))
-        {
-            res.EnsureSuccessStatusCode();
-            await using var src = await res.Content.ReadAsStreamAsync(ct);
-            await using var dst = File.Create(target);
-            var buffer = new byte[81920];
-            long done = 0;
-            int read;
-            while ((read = await src.ReadAsync(buffer, ct)) > 0)
-            {
-                await dst.WriteAsync(buffer.AsMemory(0, read), ct);
-                done += read;
-                op.Report(done);
-            }
-        }
+        var expected = release.Sums is { } sums
+            ? await ExpectedHashAsync(sums.Url, installer.Name, ct)
+                ?? throw new InvalidOperationException("The release checksums do not list the installer, so it was not installed.")
+            : null;
 
-        op.Phase("Verifying the download");
-        if (release.Sums is { } sums)
+        if (!File.Exists(target) || !await MatchesAsync(target, expected, ct))
         {
-            var expected = await ExpectedHashAsync(sums.Url, msi.Name, ct)
-                ?? throw new InvalidOperationException("The release checksums do not list the installer, so it was not installed.");
-            var actual = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, ct)));
-            if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+            op.Phase($"Downloading Nadfny {release.Version}", installer.Size);
+            var part = await ResumableDownload.RunAsync(Downloads, installer.Url, target, installer.Size, op, ct);
+            op.Phase("Verifying the download");
+            if (!await MatchesAsync(part, expected, ct))
             {
-                File.Delete(target);
-                throw new InvalidOperationException("The download did not match the release checksum, so it was deleted.");
+                File.Delete(part);
+                throw new InvalidOperationException("The download did not match the release checksum, so it was deleted. Try again.");
             }
+            File.Move(part, target, overwrite: true);
         }
         op.Flush();
         _downloaded = target;
         return release.Version!;
+    }
+
+    private static async Task<bool> MatchesAsync(string path, string? expectedSha256, CancellationToken ct)
+    {
+        if (expectedSha256 is null) return true;
+        await using var stream = File.OpenRead(path);
+        var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+        return actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Installers and partial downloads of other versions are never used again.</summary>
+    internal static void RemoveOtherDownloads(string dir, string target)
+    {
+        foreach (var file in Directory.EnumerateFiles(dir))
+        {
+            if (file.Equals(target, StringComparison.OrdinalIgnoreCase) || file.Equals(ResumableDownload.PartPath(target), StringComparison.OrdinalIgnoreCase)) continue;
+            try { File.Delete(file); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
     }
 
     /// <summary>
@@ -173,6 +183,16 @@ public sealed class UpdateService
 
     private static async Task<string?> ExpectedHashAsync(string sumsUrl, string fileName, CancellationToken ct) =>
         ParseSums(await Http.GetStringAsync(sumsUrl, ct), fileName);
+
+    // Installer downloads: no total time limit (ResumableDownload fails only on a stall) and no GitHub API Accept header.
+    private static readonly HttpClient Downloads = CreateDownloadClient();
+
+    private static HttpClient CreateDownloadClient()
+    {
+        var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Nadfny", CurrentVersion));
+        return http;
+    }
 
     private static HttpClient CreateClient()
     {
