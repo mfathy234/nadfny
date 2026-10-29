@@ -65,6 +65,8 @@ public sealed partial class CacheService
             if (go.Ok && Path.IsPathFullyQualified(path))
                 definitions = definitions.Select(d => d.Id == "go-mod" ? d with { Path = path } : d).ToList();
         }
+        // GOMODCACHE can point anywhere; clearing empties the folder, so only accept one that holds a module cache.
+        definitions = definitions.Where(d => d.Id != "go-mod" || Directory.Exists(Path.Combine(d.Path, "cache", "download"))).ToList();
         var present = definitions.Where(d => Directory.Exists(d.Path)).ToList();
         progress.SetPhase("Measuring caches", present.Count);
         await Parallel.ForEachAsync(present, ct, (d, token) =>
@@ -72,7 +74,8 @@ public sealed partial class CacheService
             var bytes = d.Id.StartsWith("conda-", StringComparison.Ordinal)
                 ? Children(d).Sum(c => c.IsDir ? DirectorySizer.MeasureSequential(c.Path, token).Bytes : c.Length)
                 : DirectorySizer.MeasureSequential(d.Path, token).Bytes;
-            var info = new CacheInfo(Guid.NewGuid().ToString("N"), d.Name, d.Path, d.Note, bytes);
+            // Stable ids: history compares sizes across scans by id. Clearing still only accepts ids from this scan.
+            var info = new CacheInfo(d.Id, d.Name, d.Path, d.Note, bytes);
             produced[info.Id] = d;
             list.Add(info);
             progress.CompleteOne(d.Path);
