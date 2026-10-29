@@ -354,7 +354,7 @@ export async function cleanWindows(items) {
   const known = items.reduce((a, i) => a + (i.bytes ?? 0), 0);
   const warnings = items.map((i) => i.warning).filter(Boolean);
   const { confirmed } = await confirmSheet({
-    title: 'Clean up Windows update files?',
+    title: 'Clean up Windows files?',
     body: 'Windows Disk Cleanup removes these with its own safety rules. Windows asks for administrator permission, and it can take several minutes.',
     items: items.map((i) => ({ label: i.name, sub: i.note, size: i.bytes != null ? bytes(i.bytes) : 'Size unknown' })),
     warning: warnings.length ? warnings.join(' ') : null,

@@ -9,6 +9,8 @@ public sealed record CacheInfo(string Id, string Name, string Path, string Note,
 public sealed partial class CacheService
 {
     private static readonly TimeSpan RecentWindow = TimeSpan.FromHours(24);
+    // Folders shared with running programs or written while a crash is being saved: recent files are never cleared.
+    private static readonly HashSet<string> KeepsRecentFiles = ["temp", "crash-dumps", "wer-archive", "wer-queue"];
     private readonly Func<IReadOnlyList<CacheDefinition>> _definitions;
     private readonly bool _resolveGo;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -42,6 +44,7 @@ public sealed partial class CacheService
             new("temp", "Temporary files", Path.GetTempPath(), "Anything changed in the last 24 hours, and files in use, are kept."),
         ];
         AddDeveloperCaches(definitions, home, local, roaming, environment);
+        AddCrashDumpCaches(definitions, local);
         return definitions;
     }
 
@@ -107,10 +110,11 @@ public sealed partial class CacheService
         if (isTemp && !Path.TrimEndingDirectorySeparator(def.Path).EndsWith("Temp", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"The temp folder points somewhere unexpected ({def.Path}), so it was not cleared.");
 
+        var keepsRecent = KeepsRecentFiles.Contains(def.Id);
         var children = Children(def);
         var targets = new List<(string Path, long Bytes)>();
         var keepAfter = DateTime.UtcNow - RecentWindow;
-        op.Phase(isTemp ? "Checking which files are still in use" : "Preparing", children.Count);
+        op.Phase(keepsRecent ? "Checking which files are still in use" : "Preparing", children.Count);
         await Task.Run(() =>
         {
             var checkedCount = 0;
@@ -119,8 +123,8 @@ public sealed partial class CacheService
                 ct.ThrowIfCancellationRequested();
                 var size = isDir ? DirectorySizer.MeasureSequential(child, ct) : new DirectorySizer.SizeResult(length, 1, new DateTime(writeTicks, DateTimeKind.Utc));
                 op.Report(++checkedCount, child);
-                // Temp is shared with running programs: keep anything with a file written recently, at any depth.
-                if (isTemp && (size.LastWriteUtc > keepAfter || new DateTime(writeTicks, DateTimeKind.Utc) > keepAfter)) continue;
+                // Temp is shared with running programs and a dump may still be written: keep anything recent, at any depth.
+                if (keepsRecent && (size.LastWriteUtc > keepAfter || new DateTime(writeTicks, DateTimeKind.Utc) > keepAfter)) continue;
                 targets.Add((child, size.Bytes));
             }
         }, ct);
