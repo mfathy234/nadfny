@@ -6,7 +6,7 @@ namespace Nadfny.Features.AiModels;
 public sealed record OllamaModel(string Name, string Id, long Bytes, string Modified);
 
 /// <summary>Parses `ollama list` output. Names are checked against an allow-list before they reach `ollama rm`.</summary>
-public static class OllamaList
+internal static class OllamaList
 {
     // NAME, ID, SIZE and MODIFIED columns. The header has no digits in the SIZE slot, so it never matches.
     private static readonly Regex Row = new(@"^(\S+)\s+(\S+)\s+(\d+(?:\.\d+)?)\s*(B|KB|MB|GB|TB)\s+(.*)$",

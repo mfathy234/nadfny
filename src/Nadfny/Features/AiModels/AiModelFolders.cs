@@ -3,7 +3,7 @@ namespace Nadfny.Features.AiModels;
 public sealed record AiModelFolder(string Source, string Name, string Kind, string Path, string Note, bool Recycle);
 
 /// <summary>Model folders on disk: Hugging Face hub cache entries and LM Studio publisher/model folders.</summary>
-public static class AiModelFolders
+internal static class AiModelFolders
 {
     public const string HuggingFaceSource = "Hugging Face";
     public const string LmStudioSource = "LM Studio";

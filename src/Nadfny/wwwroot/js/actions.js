@@ -244,6 +244,8 @@ export async function dockerRemove(kind, id, label, size) {
 }
 
 export async function dockerCompact(disk, used) {
+  // Both shut WSL down; never run two compactions at once.
+  if ([...state.busy].some((key) => key.startsWith('wsl:compact:') || key === 'docker:compact')) return;
   const { confirmed } = await confirmSheet({
     title: 'Compact Docker’s disk?',
     body: `The disk file is ${bytes(disk.bytes)} but Docker only uses about ${bytes(used)} inside it. Compacting gives the empty space back to Windows.`,
