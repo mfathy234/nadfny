@@ -32,6 +32,7 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 | **Apps & games** | Every installed app and game with its program size, the data it keeps in AppData and ProgramData, and its caches. Clear an app's cache in one click, uninstall it through its own uninstaller, then review the folders it left behind (they go to the Recycle Bin). Games are found in Steam, Epic, Xbox, GOG, Ubisoft, EA and Battle.net, and also in plain folders such as `D:\Games\Racing\…`, recognized by their engine files (Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py). |
 | **Recycle Bin** | How much the Bin holds on each drive, and emptying it, since deleted files only free space once it is emptied. |
 | **Explore** | Drill into any drive or folder by size, reveal in Explorer, or delete to the Recycle Bin. |
+| **Large files** | Find files over 100 MB, 500 MB or 1 GB in your scan locations, review Downloads untouched for 30, 90 or 180 days by type, and find verified duplicates of at least 1 MB without counting hard links. Move selected items to the Recycle Bin; duplicate groups always keep at least one copy. |
 | **This PC** | CPU, GPU (with real VRAM and clocks), every RAM stick, every drive (NVMe, SATA, HDD), displays, motherboard and BIOS, each with a copy button. It even tells you when your RAM is running below its rated speed. |
 
 Scan your project folders, or switch on **All drives** to scan every local disk.

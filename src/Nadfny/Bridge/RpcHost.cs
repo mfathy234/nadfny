@@ -7,6 +7,7 @@ using Nadfny.Features.Artifacts;
 using Nadfny.Features.Caches;
 using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
+using Nadfny.Features.Finder;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
 using Nadfny.Features.Updates;
@@ -29,6 +30,7 @@ public sealed class RpcHost
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
     private readonly ExploreService _explore = new();
+    private readonly FinderService _finder = new();
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
     private readonly UpdateService _updates = new();
@@ -108,6 +110,9 @@ public sealed class RpcHost
 
         "explore.list" => await Scoped("explore", ct => _explore.ListAsync(Str(p, "path"), e => Emit("explore.item", e), ct)),
         "explore.delete" => await DeleteExplored(Str(p, "path"), Bool(p, "permanent"), Op(p)),
+
+        "finder.scan" => await Scoped("finder", ct => _finder.ScanAsync(Str(p, "mode"), _settings.Roots, Int(p, "value"), item => Emit("finder.item", item), Progress("finder"), ct)),
+        "finder.remove" => await _finder.RemoveAsync(Str(p, "mode"), Paths(p), Op(p), CancellationToken.None),
 
         "system.info" => await _system.GetAsync(Bool(p, "refresh"), CancellationToken.None),
         "clipboard.set" => _setClipboard(Str(p, "text")),
@@ -235,6 +240,9 @@ public sealed class RpcHost
 
     private static bool Bool(JsonElement p, string name) =>
         p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
+    private static int Int(JsonElement p, string name) =>
+        p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) ? n : 0;
 
     private sealed record RpcRequest(string Id, string Method, JsonElement Params);
 }
