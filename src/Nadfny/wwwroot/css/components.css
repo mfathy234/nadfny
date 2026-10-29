@@ -621,3 +621,10 @@
   .search input { width: 120px; }
   .app-detail-line { grid-template-columns: 90px minmax(0, 1fr) 70px 28px; }
 }
+.growth-hint { color: var(--ink-2); font-size: 11px; margin-top: 4px; max-width: 220px; }
+.history h3 { font-size: 13px; margin: 20px 0 10px; }
+.row.no-check.history-row { grid-template-columns: minmax(0, 1fr) auto; }
+.history-row .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.history-drives { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.history-figure { margin: 16px 0 0; }
+.history-chart { display: block; width: 100%; max-width: 640px; height: 84px; color: var(--accent-text); }

@@ -5,6 +5,7 @@ import { state } from '../store.js';
 import { rowWrap, withOpProgress } from './common.js';
 import { scanSystemSpace } from '../system-space-actions.js';
 import { systemSpaceSection } from './system-space.js';
+import { growthSize } from './history.js';
 
 export const cachesView = {
   id: 'caches',
@@ -53,7 +54,7 @@ function cacheRow(c, max) {
     h('div', { class: 'row-meta' },
       h('div', { class: 'row-actions' },
         h('button', { class: 'icon-btn', type: 'button', title: c.path, 'aria-label': `Show ${c.name} in Explorer`, onclick: () => reveal(c.path) }, icon('arrow-square-out')))),
-    withOpProgress(`cache:${c.id}`, sizeCell(bytes(c.bytes), c.bytes / max)),
+    withOpProgress(`cache:${c.id}`, growthSize('caches', c.id, sizeCell(bytes(c.bytes), c.bytes / max), c.bytes)),
     clear));
 }
 

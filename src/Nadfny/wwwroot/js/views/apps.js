@@ -5,6 +5,7 @@ import { bytes, plural } from '../format.js';
 import { opFor } from '../ops.js';
 import { state, update } from '../store.js';
 import { rowWrap, segmented, withOpProgress } from './common.js';
+import { growthSize } from './history.js';
 
 const total = (a) => (a.appBytes ?? 0) + a.dataBytes;
 const MB = 1024 * 1024;
@@ -101,7 +102,7 @@ function appRow(a, max) {
         h('div', { class: 'row-sub' }, sub || ' '),
         a.note && a.source !== 'folder' && h('div', { class: 'row-sub' }, icon('info'), a.note)),
       h('div', { class: 'row-meta' }, a.appBytes == null ? 'App size unknown' : ''),
-      withOpProgress(key, sizeCell(bytes(total(a)), total(a) / max)),
+      withOpProgress(key, growthSize('apps', a.id, sizeCell(bytes(total(a)), total(a) / max), total(a))),
       actions)),
     expanded && rowWrap(`${a.id}:detail`, detail(a)),
   ];

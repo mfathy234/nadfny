@@ -5,6 +5,7 @@ const scan = () => ({ status: 'idle', error: null, items: new Map(), finishedAt:
 export const state = {
   view: 'overview',
   info: { roots: [], drives: [], allDrives: false },
+  history: { report: null, error: null, clearing: false },
   progress: {},
   worktrees: { ...scan(), filter: 'all' },
   docker: { status: 'idle', error: null, report: null, tab: 'images' },

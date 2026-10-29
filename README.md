@@ -25,6 +25,7 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 
 | Area | What you get |
 | --- | --- |
+| **Storage history** | Up to 90 days of drive usage and scan totals, the top five growing items, and growth hints in Build output, Caches and Apps & games. Stored locally with a 5 MB limit; clear it from Overview. |
 | **Worktrees** | Every linked worktree across your repos, with size, branch, last commit and badges for *Merged*, *uncommitted changes*, *unpushed* and *never pushed*. Filter to "Merged & clean" and remove them in one go, optionally with their branches. |
 | **Docker** | Build cache, images, containers and volumes with their real sizes, one-click prunes, and compaction of Docker's WSL disk file so freed space actually returns to Windows. |
 | **Build output** | `node_modules`, `bin`/`obj`, `dist`, `target`, `.next`, `.venv`, Unity, Godot, Flutter, Elixir, CocoaPods, CMake, Gradle and Python caches. Grouped by project with tool labels, source activity age filters through 1+ year, and size or oldest-first sorting. |
