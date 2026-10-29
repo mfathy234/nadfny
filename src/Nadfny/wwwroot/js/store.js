@@ -8,7 +8,7 @@ export const state = {
   progress: {},
   worktrees: { ...scan(), filter: 'all' },
   docker: { status: 'idle', error: null, report: null, tab: 'images' },
-  artifacts: { ...scan(), kind: 'all', age: 0, expanded: new Set() },
+  artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
   apps: { ...scan(), filter: 'all', query: '', expanded: new Set() },
   windows: { status: 'idle', error: null, items: [] },

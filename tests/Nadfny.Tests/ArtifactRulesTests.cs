@@ -4,6 +4,46 @@ namespace Nadfny.Tests;
 
 public sealed class ArtifactRulesTests
 {
+    [Theory]
+    [InlineData("Library", "Assets", "ProjectSettings")]
+    [InlineData("Temp", "Assets", "ProjectSettings")]
+    [InlineData("Obj", "Assets", "ProjectSettings")]
+    [InlineData("Logs", "Assets", "ProjectSettings")]
+    [InlineData(".godot", "project.godot", "")]
+    [InlineData(".turbo", "package.json", "")]
+    [InlineData(".parcel-cache", "package.json", "")]
+    [InlineData(".svelte-kit", "package.json", "")]
+    [InlineData(".nuxt", "package.json", "")]
+    [InlineData(".angular", "package.json", "")]
+    [InlineData(".expo", "package.json", "")]
+    [InlineData(".dart_tool", "pubspec.yaml", "")]
+    [InlineData("build", "pubspec.yaml", "")]
+    [InlineData("_build", "mix.exs", "")]
+    [InlineData("deps", "mix.exs", "")]
+    [InlineData("Pods", "Podfile", "")]
+    [InlineData(".gradle", "build.gradle", "")]
+    [InlineData("build", "build.gradle", "")]
+    [InlineData("build", "build.gradle.kts", "")]
+    public void Match_NewTypesRequireTheirMarkers(string folder, string marker, string second)
+    {
+        Assert.NotNull(ArtifactRules.Match(folder, Siblings(marker, second)));
+        Assert.Null(ArtifactRules.Match(folder, Siblings("README.md")));
+        if (second.Length > 0)
+        {
+            Assert.Null(ArtifactRules.Match(folder, Siblings(marker)));
+            Assert.Null(ArtifactRules.Match(folder, Siblings(second)));
+        }
+    }
+
+    [Theory]
+    [InlineData("__pycache__")]
+    [InlineData(".pytest_cache")]
+    [InlineData(".mypy_cache")]
+    [InlineData(".ruff_cache")]
+    [InlineData(".tox")]
+    public void Match_PythonCachesNeedNoMarker(string folder) =>
+        Assert.NotNull(ArtifactRules.Match(folder, Siblings()));
+
     private static HashSet<string> Siblings(params string[] names) => new(names, StringComparer.OrdinalIgnoreCase);
 
     [Theory]
