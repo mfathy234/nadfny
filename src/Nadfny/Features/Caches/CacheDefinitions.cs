@@ -32,6 +32,18 @@ public sealed partial class CacheService
                 Path.Combine(version, "ComponentModelCache"), "The component cache is rebuilt when Visual Studio starts. Close Visual Studio first."));
     }
 
+    private static void AddCrashDumpCaches(List<CacheDefinition> items, string local)
+    {
+        items.AddRange([
+            new("crash-dumps", "App crash dumps", Path.Combine(local, "CrashDumps"),
+                "Memory dumps written when a program crashes. Developers sometimes need them to find out why it crashed. Dumps from the last 24 hours are kept."),
+            new("wer-archive", "Error reports (archive)", Path.Combine(local, "Microsoft", "Windows", "WER", "ReportArchive"),
+                "Reports Windows saved about programs that crashed or hung for this user. Reports from the last 24 hours are kept."),
+            new("wer-queue", "Error reports (queue)", Path.Combine(local, "Microsoft", "Windows", "WER", "ReportQueue"),
+                "Reports waiting to be sent to Microsoft. Clearing them only drops reports that were not sent yet. Reports from the last 24 hours are kept."),
+        ]);
+    }
+
     private static IReadOnlyList<string> ProductDirectories(string path)
     {
         try { return Directory.GetDirectories(path).Where(p => !File.GetAttributes(p).HasFlag(FileAttributes.ReparsePoint)).ToArray(); }

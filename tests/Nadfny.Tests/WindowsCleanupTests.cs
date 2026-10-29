@@ -38,10 +38,34 @@ public sealed class WindowsCleanupTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => new WindowsCleanupService().CleanAsync(["../../evil"], Nadfny.Core.OpReporter.None, CancellationToken.None));
 
     [Fact]
+    public void BuildScript_SelectsTheCrashDumpCategories()
+    {
+        var script = WindowsCleanupService.BuildScript(["memory-dump", "minidumps", "wer-system"]);
+
+        Assert.Contains("'System error memory dump files'", script);
+        Assert.Contains("'System error minidump files'", script);
+        Assert.Contains("'Windows Error Reporting Files'", script);
+    }
+
+    [Fact]
+    public void AvailableIds_OnlyIncludesCategoriesWhoseRegistryKeyExists()
+    {
+        var installed = new HashSet<string>(["System error minidump files", "Update Cleanup"], StringComparer.OrdinalIgnoreCase);
+
+        var ids = new WindowsCleanupService(() => installed).AvailableIds();
+
+        Assert.Equal(["updates", "minidumps"], ids);
+    }
+
+    [Fact]
+    public void AvailableIds_EmptyWhenNoCategoryKeyExists() =>
+        Assert.Empty(new WindowsCleanupService(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase)).AvailableIds());
+
+    [Fact]
     public async Task ScanAsync_ListsOnlyCategoriesThisWindowsHas()
     {
         var items = await new WindowsCleanupService().ScanAsync(CancellationToken.None);
-        Assert.All(items, i => Assert.Contains(i.Id, new[] { "previous", "updates", "delivery", "setup" }));
+        Assert.All(items, i => Assert.Contains(i.Id, new[] { "previous", "updates", "delivery", "setup", "memory-dump", "minidumps", "wer-system" }));
         Assert.DoesNotContain(items, i => i.Id == "previous" && !Directory.Exists(@"C:\Windows.old"));
     }
 }
