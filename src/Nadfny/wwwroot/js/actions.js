@@ -6,6 +6,7 @@ import { batchStep, endBatch, pool, runOp, startBatch } from './ops.js';
 import { animateOut, state, update } from './store.js';
 import { setStreaming } from './views/common.js';
 import { isRisky } from './views/worktrees-model.js';
+import { scanToolchains } from './toolchains-actions.js';
 
 on('worktrees.item', (w) => update((s) => s.worktrees.items.set(w.path, w)));
 on('artifacts.item', (a) => update((s) => s.artifacts.items.set(a.path, a)));
@@ -79,7 +80,7 @@ export async function refreshDrives() {
 }
 
 export function scanAll() {
-  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanWindows(), queryRecycleBin()]);
+  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin()]);
 }
 
 /* ---------- Recycle Bin ---------- */
@@ -307,6 +308,7 @@ export async function clearCache(c) {
   const { confirmed } = await confirmSheet({
     title: `Clear ${c.name}?`,
     body: c.note,
+    warning: 'Cached files are deleted permanently. Any local edits or diagnostic history in this folder are lost.',
     items: [{ label: c.name, sub: c.path, size: bytes(c.bytes) }],
     confirmLabel: `Clear ${c.name} (${bytes(c.bytes)})`,
   });
@@ -414,17 +416,17 @@ export async function addRoot() {
   const res = await call('settings.addRoot');
   if (!res.added) return;
   update((s) => { s.info = { ...s.info, roots: res.roots }; });
-  await Promise.allSettled([scanWorktrees(), scanArtifacts()]);
+  await Promise.allSettled([scanWorktrees(), scanArtifacts(), scanToolchains()]);
 }
 
 export async function setAllDrives(enabled) {
   const res = await call('settings.scanAllDrives', { enabled });
   update((s) => { s.info = { ...s.info, roots: res.roots, allDrives: res.allDrives }; });
-  await Promise.allSettled([scanWorktrees(), scanArtifacts()]);
+  await Promise.allSettled([scanWorktrees(), scanArtifacts(), scanToolchains()]);
 }
 
 export async function removeRoot(path) {
   const res = await call('settings.removeRoot', { path });
   update((s) => { s.info = { ...s.info, roots: res.roots }; });
-  await Promise.allSettled([scanWorktrees(), scanArtifacts()]);
+  await Promise.allSettled([scanWorktrees(), scanArtifacts(), scanToolchains()]);
 }

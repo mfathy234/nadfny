@@ -9,6 +9,7 @@ using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
+using Nadfny.Features.Toolchains;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
 using Nadfny.Features.Worktrees;
@@ -28,6 +29,7 @@ public sealed class RpcHost
     private readonly DockerService _docker = new();
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
+    private readonly ToolchainService _toolchains = new();
     private readonly ExploreService _explore = new();
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
@@ -95,6 +97,10 @@ public sealed class RpcHost
         "caches.scan" => await Scoped("caches", ct => _caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct)),
         "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None),
 
+        "toolchains.scan" => await Scoped("toolchains", ct => _toolchains.ScanAsync(_settings.Roots, t => Emit("toolchains.item", t), Progress("toolchains"), ct)),
+        "toolchains.remove" => await _toolchains.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "toolchains.openApps" => OpenAppsFeatures(),
+
         "windows.scan" => await Scoped("windows", ct => _windows.ScanAsync(ct)),
         "windows.clean" => await _windows.CleanAsync(Ids(p), Op(p), CancellationToken.None),
 
@@ -119,6 +125,12 @@ public sealed class RpcHost
         "scan.cancel" => Cancel(Str(p, "scope")),
         _ => throw new InvalidOperationException($"Unknown method: {method}"),
     };
+
+    private static bool OpenAppsFeatures()
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+        return true;
+    }
 
     /// <summary>One running scan per scope; starting a new one cancels the previous.</summary>
     private async Task<T> Scoped<T>(string scope, Func<CancellationToken, Task<T>> run)

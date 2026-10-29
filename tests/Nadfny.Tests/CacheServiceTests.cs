@@ -36,7 +36,7 @@ public sealed class CacheServiceTests : IDisposable
         var service = new CacheService(() => [new CacheDefinition("npm", "npm cache", Path.Combine(_root, "npm"), "")]);
 
         var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
-        var freed = await service.ClearAsync("npm", OpReporter.None, CancellationToken.None);
+        var freed = await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None);
 
         Assert.Equal(1500, Assert.Single(scanned).Bytes);
         Assert.Equal(1500, freed);
@@ -55,7 +55,9 @@ public sealed class CacheServiceTests : IDisposable
         Directory.SetLastWriteTimeUtc(Path.Combine(_root, "Temp", "busy-tool"), old);
         var service = new CacheService(() => [new CacheDefinition("temp", "Temporary files", Path.Combine(_root, "Temp"), "")]);
 
-        var freed = await service.ClearAsync("temp", OpReporter.None, CancellationToken.None);
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+
+        var freed = await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None);
 
         Assert.Equal(150, freed);
         Assert.False(Directory.Exists(Path.Combine(_root, "Temp", "stale-folder")));
@@ -69,7 +71,8 @@ public sealed class CacheServiceTests : IDisposable
         Write(@"Documents\keep.txt", 10);
         var service = new CacheService(() => [new CacheDefinition("temp", "Temporary files", Path.Combine(_root, "Documents"), "")]);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync("temp", OpReporter.None, CancellationToken.None));
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None));
         Assert.True(File.Exists(Path.Combine(_root, "Documents", "keep.txt")));
     }
 
@@ -78,5 +81,89 @@ public sealed class CacheServiceTests : IDisposable
     {
         var service = new CacheService(() => []);
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync("nope", OpReporter.None, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ClearAsync_RequiresAnItemFromTheLastScan()
+    {
+        var path = Write(@"go\pkg\mod\keep.txt", 42);
+        var service = new CacheService(() => [new("go-mod", "Go modules", Path.GetDirectoryName(path)!, "")]);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync("go-mod", OpReporter.None, CancellationToken.None));
+        Assert.True(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task ClearAsync_RemovesReadOnlyGoModules()
+    {
+        var path = Write(@"go\pkg\mod\example\module.txt", 42);
+        File.SetAttributes(path, FileAttributes.ReadOnly);
+        File.SetAttributes(Path.GetDirectoryName(path)!, FileAttributes.Directory | FileAttributes.ReadOnly);
+        var service = new CacheService(() => [new("go-mod", "Go modules", Path.Combine(_root, "go", "pkg", "mod"), "")]);
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        Assert.Equal(42, await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None));
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void Definitions_ResolveEnvironmentOverridesAndProductFolders()
+    {
+        var local = Path.Combine(_root, "Local");
+        var roaming = Path.Combine(_root, "Roaming");
+        Directory.CreateDirectory(Path.Combine(local, "JetBrains", "Rider2025.1", "caches"));
+        Directory.CreateDirectory(Path.Combine(local, "Microsoft", "VisualStudio", "17.0_test", "ComponentModelCache"));
+        Directory.CreateDirectory(Path.Combine(_root, "miniconda3", "pkgs"));
+        var env = new Dictionary<string, string> { ["USERPROFILE"] = _root, ["LOCALAPPDATA"] = local, ["APPDATA"] = roaming, ["GOMODCACHE"] = Path.Combine(_root, "custom-go") };
+        var definitions = CacheService.Definitions(key => env.GetValueOrDefault(key));
+        Assert.Equal(env["GOMODCACHE"], definitions.Single(x => x.Id == "go-mod").Path);
+        Assert.Equal(Path.Combine(local, "go-build"), definitions.Single(x => x.Id == "go-build").Path);
+        Assert.Equal(Path.Combine(roaming, "Code", "CachedExtensionVSIXs"), definitions.Single(x => x.Id == "vscode-vsix").Path);
+        var expected = new Dictionary<string, string>
+        {
+            ["uv"] = Path.Combine(local, "uv", "cache"),
+            ["poetry"] = Path.Combine(local, "pypoetry", "Cache"),
+            ["bun"] = Path.Combine(_root, ".bun", "install", "cache"),
+            ["deno"] = Path.Combine(local, "deno"),
+            ["composer-local"] = Path.Combine(local, "Composer", "cache"),
+            ["composer-roaming"] = Path.Combine(roaming, "Composer", "cache"),
+            ["cargo-git"] = Path.Combine(_root, ".cargo", "git"),
+            ["conda-conda"] = Path.Combine(_root, ".conda", "pkgs"),
+            ["conda-miniconda3"] = Path.Combine(_root, "miniconda3", "pkgs"),
+            ["conda-anaconda3"] = Path.Combine(_root, "anaconda3", "pkgs"),
+        };
+        Assert.All(expected, item => Assert.Equal(item.Value, definitions.Single(x => x.Id == item.Key).Path));
+        env.Remove("GOMODCACHE");
+        Assert.Equal(Path.Combine(_root, "go", "pkg", "mod"), CacheService.Definitions(key => env.GetValueOrDefault(key)).Single(x => x.Id == "go-mod").Path);
+        Assert.Contains(definitions, x => x.Path == Path.Combine(local, "JetBrains", "Rider2025.1", "caches"));
+        Assert.Contains(definitions, x => x.Path == Path.Combine(local, "Microsoft", "VisualStudio", "17.0_test", "ComponentModelCache"));
+        Assert.Contains(definitions, x => x.Path == Path.Combine(_root, "miniconda3", "pkgs"));
+        Assert.All(definitions, x => Assert.False(string.IsNullOrWhiteSpace(x.Note)));
+    }
+
+    [Fact]
+    public async Task ClearAsync_StaleIdCannotClearAChangedDefinitionPath()
+    {
+        Write(@"first\keep.txt", 42);
+        var second = Write(@"second\keep.txt", 42);
+        var path = Path.Combine(_root, "first");
+        var service = new CacheService(() => [new("go-mod", "Go modules", path, "")]);
+        var first = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        path = Path.Combine(_root, "second");
+        await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync(Assert.Single(first).Id, OpReporter.None, CancellationToken.None));
+        Assert.True(File.Exists(second));
+    }
+
+    [Fact]
+    public async Task ClearAsync_CondaKeepsExtractedPackagesThatEnvironmentsMayReference()
+    {
+        var package = Write(@"pkgs\python-3\python.exe", 100);
+        Write(@"pkgs\python-3.conda", 20);
+        Write(@"pkgs\numpy.tar.bz2", 30);
+        Write(@"pkgs\cache\repodata.json", 40);
+        var service = new CacheService(() => [new("conda-user", "Conda packages", Path.Combine(_root, "pkgs"), "")]);
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        Assert.Equal(90, Assert.Single(scanned).Bytes);
+        Assert.Equal(90, await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None));
+        Assert.True(File.Exists(package));
     }
 }
