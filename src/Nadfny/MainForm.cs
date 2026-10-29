@@ -44,7 +44,7 @@ public sealed class MainForm : Form
 #endif
         core.SetVirtualHostNameToFolderMapping(Host, Path.Combine(AppContext.BaseDirectory, "wwwroot"), CoreWebView2HostResourceAccessKind.Deny);
 
-        _rpc = new RpcHost(Post, PickFolder, SetClipboard);
+        _rpc = new RpcHost(Post, PickFolder, SetClipboard, () => BeginInvoke(Close));
         core.WebMessageReceived += (_, args) =>
         {
             try { _rpc.Handle(args.TryGetWebMessageAsString()); }

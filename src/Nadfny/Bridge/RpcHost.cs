@@ -7,6 +7,7 @@ using Nadfny.Features.Caches;
 using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
 using Nadfny.Features.SystemInfo;
+using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
 using Nadfny.Features.Worktrees;
 
@@ -28,11 +29,14 @@ public sealed class RpcHost
     private readonly ExploreService _explore = new();
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
+    private readonly UpdateService _updates = new();
+    private readonly Action _exitApp;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scans = new();
     private AppSettings _settings = AppSettings.Load();
 
-    public RpcHost(Action<string> post, Func<string?> pickFolder, Func<string, bool> setClipboard)
+    public RpcHost(Action<string> post, Func<string?> pickFolder, Func<string, bool> setClipboard, Action exitApp)
     {
+        _exitApp = exitApp;
         _post = post;
         _pickFolder = pickFolder;
         _setClipboard = setClipboard;
@@ -96,6 +100,10 @@ public sealed class RpcHost
 
         "system.info" => await _system.GetAsync(Bool(p, "refresh"), CancellationToken.None),
         "clipboard.set" => _setClipboard(Str(p, "text")),
+        "update.check" => await _updates.CheckAsync(CancellationToken.None),
+        "update.download" => await _updates.DownloadAsync(Op(p), CancellationToken.None),
+        "update.install" => InstallUpdate(),
+        "update.openPage" => OpenReleasePage(Str(p, "url")),
         "shell.reveal" => Reveal(Str(p, "path")),
         "scan.cancel" => Cancel(Str(p, "scope")),
         _ => throw new InvalidOperationException($"Unknown method: {method}"),
@@ -145,6 +153,19 @@ public sealed class RpcHost
             : AppSettings.Defaults();
         _settings.Save();
         return new { roots = _settings.Roots, allDrives = AllDrivesSelected() };
+    }
+
+    private bool InstallUpdate()
+    {
+        _updates.InstallAndRestart();
+        _ = Task.Delay(400).ContinueWith(_ => _exitApp()); // let the reply reach the UI, then close so the MSI can replace files
+        return true;
+    }
+
+    private static bool OpenReleasePage(string url)
+    {
+        UpdateService.OpenReleasePage(url);
+        return true;
     }
 
     /// <summary>Progress channel for one user action; the UI passes its own opId so it can match the events.</summary>

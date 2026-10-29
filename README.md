@@ -68,6 +68,8 @@ Get the latest version from [Releases](https://github.com/mfathy234/nadfny/relea
 
 Both include the .NET runtime, so there is nothing else to download.
 
+**Updates:** Nadfny checks GitHub for a new release shortly after it starts and every few hours (or use *Check for updates* in the sidebar). The installed version downloads the new installer, verifies it against the release's SHA-256 checksums, and upgrades in place when you choose *Restart to update*. The portable version shows the update and links to the release page.
+
 **Requirements:** Windows 10 or 11 (x64) with the Microsoft Edge WebView2 Runtime, which is already part of Windows 11. `git` and Docker are optional; their sections light up when they are installed.
 
 > Nadfny is a new, unsigned app, so Windows SmartScreen may warn you the first time you run it. Choose **More info**, then **Run anyway**.

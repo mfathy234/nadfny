@@ -1,4 +1,5 @@
 import { addRoot, loadInfo, loadSystemInfo, removeRoot, scanAll, setAllDrives } from './actions.js';
+import { startUpdateChecks, updateCard, versionLine } from './updates.js';
 import { activityPanel } from './views/activity.js';
 import { fraction, scanPanel } from './views/progress.js';
 import { h, icon, toast } from './dom.js';
@@ -63,7 +64,9 @@ function renderSidebarFoot() {
         icon(/^[A-Za-z]:\\?$/.test(r) ? 'hard-drives' : 'folder'), h('span', null, rootLabel(r)),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Stop scanning ${r}`, title: 'Remove location', onclick: () => removeRoot(r) }, icon('x')))),
       !all && h('button', { class: 'btn quiet small', type: 'button', style: { marginTop: '4px' }, onclick: () => addRoot().catch((e) => toast(e.message, 'bad')) }, icon('plus'), 'Add location')),
+    updateCard(),
     state.freed > 0 && h('div', { class: 'freed' }, h('div', { class: 'freed-label' }, 'Freed this session'), h('div', { class: 'freed-value' }, bytes(state.freed))),
+    versionLine(),
   ].filter(Boolean));
 }
 
@@ -141,6 +144,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 render();
+startUpdateChecks();
 loadSystemInfo(); // read-only and slow-ish: start now so This PC is ready when opened
 loadInfo()
   .then(() => scanAll())
