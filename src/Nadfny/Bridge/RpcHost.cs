@@ -7,8 +7,12 @@ using Nadfny.Features.Artifacts;
 using Nadfny.Features.Caches;
 using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
+using Nadfny.Features.History;
+using Nadfny.Features.Finder;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
+using Nadfny.Features.SystemSpace;
+using Nadfny.Features.Toolchains;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
 using Nadfny.Features.Worktrees;
@@ -28,11 +32,15 @@ public sealed class RpcHost
     private readonly DockerService _docker = new();
     private readonly ArtifactService _artifacts = new();
     private readonly CacheService _caches = new();
+    private readonly ToolchainService _toolchains = new();
     private readonly ExploreService _explore = new();
+    private readonly FinderService _finder = new();
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
+    private readonly SystemSpaceService _systemSpace = new();
     private readonly UpdateService _updates = new();
     private readonly AppService _apps = new();
+    private readonly ScanHistory _history;
     private readonly Action _exitApp;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scans = new();
     private AppSettings _settings = AppSettings.Load();
@@ -43,6 +51,7 @@ public sealed class RpcHost
         _post = post;
         _pickFolder = pickFolder;
         _setClipboard = setClipboard;
+        _history = new ScanHistory(() => Emit("history.changed", new { }));
         _ = Task.Run(PendingDeletes.ResumeAsync); // finish deletes interrupted by a previous run
     }
 
@@ -79,28 +88,41 @@ public sealed class RpcHost
         "settings.addRoot" => AddRoot(),
         "settings.removeRoot" => RemoveRoot(Str(p, "path")),
         "drives.list" => ExploreService.Drives(),
+        "history.get" => await _history.ReportAsync(),
+        "history.clear" => await _history.ClearAsync(),
 
-        "worktrees.scan" => await Scoped("worktrees", ct => _worktrees.ScanAsync(_settings.Roots, w => Emit("worktrees.item", w), Progress("worktrees"), ct)),
+        "worktrees.scan" => await Scoped("worktrees", ct => _history.CaptureAsync(_worktrees.ScanAsync(_settings.Roots, w => Emit("worktrees.item", w), Progress("worktrees"), ct), ct)),
         "worktrees.remove" => await _worktrees.RemoveAsync(Str(p, "path"), Bool(p, "deleteBranch"), Bool(p, "allowUnsaved"), Op(p), CancellationToken.None),
 
-        "docker.scan" => await Scoped("docker", ct => _docker.ScanAsync(ct)),
+        "docker.scan" => await Scoped("docker", ct => _history.CaptureAsync(_docker.ScanAsync(ct), ct)),
         "docker.prune" => await _docker.PruneAsync(Str(p, "kind"), Op(p), CancellationToken.None),
         "docker.remove" => await _docker.RemoveAsync(Str(p, "kind"), Str(p, "id"), Op(p), CancellationToken.None),
         "docker.compact" => await _docker.CompactDiskAsync(Op(p), CancellationToken.None),
 
-        "artifacts.scan" => await Scoped("artifacts", ct => _artifacts.ScanAsync(_settings.Roots, a => Emit("artifacts.item", a), Progress("artifacts"), ct)),
+        "artifacts.scan" => await Scoped("artifacts", ct => _history.CaptureAsync(_artifacts.ScanAsync(_settings.Roots, a => Emit("artifacts.item", a), Progress("artifacts"), ct), ct)),
         "artifacts.remove" => await RemoveArtifacts(p),
         "artifacts.check" => await _artifacts.CheckAsync(Paths(p), CancellationToken.None),
 
-        "caches.scan" => await Scoped("caches", ct => _caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct)),
-        "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "caches.scan" => await Scoped("caches", ct => _history.CaptureAsync(_caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct), ct)),
+        "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None, Str(p, "path") is { Length: > 0 } path ? path : null),
+
+        "toolchains.scan" => await Scoped("toolchains", ct => _toolchains.ScanAsync(_settings.Roots, t => Emit("toolchains.item", t), Progress("toolchains"), ct)),
+        "toolchains.remove" => await _toolchains.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "toolchains.openApps" => OpenAppsFeatures(),
 
         "windows.scan" => await Scoped("windows", ct => _windows.ScanAsync(ct)),
         "windows.clean" => await _windows.CleanAsync(Ids(p), Op(p), CancellationToken.None),
 
-        "apps.scan" => await Scoped("apps", ct => _apps.ScanAsync(a => Emit("apps.item", a), Progress("apps"), ct)),
+        "systemSpace.scan" => await Scoped("systemSpace", ct => _systemSpace.ScanAsync(ct)),
+        "systemSpace.hibernate" => await _systemSpace.ChangeHibernationAsync(Str(p, "action"), Op(p)),
+        "systemSpace.settings" => SystemSpaceService.OpenSettings(Str(p, "kind")),
+
+        "apps.scan" => await Scoped("apps", ct => _history.CaptureAsync(_apps.ScanAsync(a => Emit("apps.item", a), Progress("apps"), ct), ct)),
         "apps.clearCache" => await _apps.ClearCacheAsync(Str(p, "id"), Op(p), CancellationToken.None),
         "apps.uninstall" => await Scoped("uninstall", ct => _apps.UninstallAsync(Str(p, "id"), Op(p), ct)),
+        "apps.uninstallQueue" => await Scoped("uninstall", ct => _apps.UninstallQueueAsync(Paths(p), Bool(p, "quiet"), Op(p), ct)),
+        "apps.forcePreview" => await _apps.PreviewForcedRemovalAsync(Str(p, "id"), CancellationToken.None),
+        "apps.forceRemove" => await _apps.ForceRemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
         "apps.removeLeftovers" => await RemoveLeftovers(p),
 
         "recycle.query" => RecycleBinService.Query(),
@@ -108,6 +130,9 @@ public sealed class RpcHost
 
         "explore.list" => await Scoped("explore", ct => _explore.ListAsync(Str(p, "path"), e => Emit("explore.item", e), ct)),
         "explore.delete" => await DeleteExplored(Str(p, "path"), Bool(p, "permanent"), Op(p)),
+
+        "finder.scan" => await Scoped("finder", ct => _finder.ScanAsync(Str(p, "mode"), _settings.Roots, Int(p, "value"), item => Emit("finder.item", item), Progress("finder"), ct)),
+        "finder.remove" => await _finder.RemoveAsync(Str(p, "mode"), Paths(p), Op(p), CancellationToken.None),
 
         "system.info" => await _system.GetAsync(Bool(p, "refresh"), CancellationToken.None),
         "clipboard.set" => _setClipboard(Str(p, "text")),
@@ -119,6 +144,12 @@ public sealed class RpcHost
         "scan.cancel" => Cancel(Str(p, "scope")),
         _ => throw new InvalidOperationException($"Unknown method: {method}"),
     };
+
+    private static bool OpenAppsFeatures()
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+        return true;
+    }
 
     /// <summary>One running scan per scope; starting a new one cancels the previous.</summary>
     private async Task<T> Scoped<T>(string scope, Func<CancellationToken, Task<T>> run)
@@ -235,6 +266,9 @@ public sealed class RpcHost
 
     private static bool Bool(JsonElement p, string name) =>
         p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
+    private static int Int(JsonElement p, string name) =>
+        p.ValueKind == JsonValueKind.Object && p.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) ? n : 0;
 
     private sealed record RpcRequest(string Id, string Method, JsonElement Params);
 }

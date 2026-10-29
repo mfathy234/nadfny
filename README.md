@@ -25,13 +25,17 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 
 | Area | What you get |
 | --- | --- |
+| **Storage history** | Up to 90 days of drive usage and scan totals, the top five growing items, and growth hints in Build output, Caches and Apps & games. Stored locally with a 5 MB limit; clear it from Overview. |
 | **Worktrees** | Every linked worktree across your repos, with size, branch, last commit and badges for *Merged*, *uncommitted changes*, *unpushed* and *never pushed*. Filter to "Merged & clean" and remove them in one go, optionally with their branches. |
 | **Docker** | Build cache, images, containers and volumes with their real sizes, one-click prunes, and compaction of Docker's WSL disk file so freed space actually returns to Windows. |
-| **Build output** | `node_modules`, `bin`/`obj`, `dist`, `target`, `.next`, `.venv` and more, grouped by project, filterable by age ("untouched for 30+ days"). |
-| **Caches** | npm, pnpm, Yarn, NuGet, pip, Gradle, Maven, Playwright browsers and Temp, plus Windows update leftovers through Windows' own Disk Cleanup. |
+| **Build output** | `node_modules`, `bin`/`obj`, `dist`, `target`, `.next`, `.venv`, Unity, Godot, Flutter, Elixir, CocoaPods, CMake, Gradle and Python caches. Grouped by project with tool labels, source activity age filters through 1+ year, and size or oldest-first sorting. |
+| **Caches** | npm, pnpm, Yarn, NuGet, pip, Gradle, Maven, Playwright browsers and Temp; Go modules/builds, uv, Poetry, Conda, Bun, Deno, Composer, Cargo, VS Code extension downloads, JetBrains caches/logs and Visual Studio component caches. Review older .NET SDK patches with global.json pin checks and copy uninstall commands; remove per-user Android images or move emulator data and old JetBrains folders to the Recycle Bin. Windows update leftovers use Windows' own Disk Cleanup. |
 | **Apps & games** | Every installed app and game with its program size, the data it keeps in AppData and ProgramData, and its caches. Clear an app's cache in one click, uninstall it through its own uninstaller, then review the folders it left behind (they go to the Recycle Bin). Games are found in Steam, Epic, Xbox, GOG, Ubisoft, EA and Battle.net, and also in plain folders such as `D:\Games\Racing\…`, recognized by their engine files (Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py). |
+| **Broken apps & bulk uninstall** | Remove broken app entries after backing up their registry keys, then recycle reviewed leftovers. Select multiple apps to uninstall one at a time, quietly where supported, with a combined leftover review. Shared folders and protected locations are kept. |
 | **Recycle Bin** | How much the Bin holds on each drive, and emptying it, since deleted files only free space once it is emptied. |
+| **Windows space** | Hibernation file size, confirmed controls to turn it off or reduce it, pagefile and swapfile sizes per drive, and restore-point counts and shadow storage usage. Pagefile and restore settings open in Windows; Nadfny does not delete restore points. |
 | **Explore** | Drill into any drive or folder by size, reveal in Explorer, or delete to the Recycle Bin. |
+| **Large files** | Find files over 100 MB, 500 MB or 1 GB in your scan locations, review Downloads untouched for 30, 90 or 180 days by type, and find verified duplicates of at least 1 MB without counting hard links. Move selected items to the Recycle Bin; duplicate groups always keep at least one copy. |
 | **This PC** | CPU, GPU (with real VRAM and clocks), every RAM stick, every drive (NVMe, SATA, HDD), displays, motherboard and BIOS, each with a copy button. It even tells you when your RAM is running below its rated speed. |
 
 Scan your project folders, or switch on **All drives** to scan every local disk.

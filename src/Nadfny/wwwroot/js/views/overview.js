@@ -4,6 +4,7 @@ import { bytes, daysSince, isUnder, plural } from '../format.js';
 import { state, update } from '../store.js';
 import { dockerUsed, unusedImages } from './docker.js';
 import { isSafe, isStale } from './worktrees-model.js';
+import { historyCard } from './history.js';
 
 const CATEGORIES = [
   { key: 'worktrees', label: 'Worktrees', color: 'var(--cat-worktrees)', view: 'worktrees' },
@@ -61,7 +62,7 @@ export const overviewView = {
 
   render() {
     const drive = primaryDrive();
-    return h('div', null, drive && capacity(drive), recommendations());
+    return h('div', null, drive && capacity(drive), historyCard(), recommendations());
   },
 };
 

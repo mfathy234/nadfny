@@ -30,7 +30,8 @@ public sealed record AppInfo(
     IReadOnlyList<AppFolder> Data,
     IReadOnlyList<AppFolder> Caches,
     bool CanUninstall,
-    string? Note)
+    string? Note,
+    bool Broken = false)
 {
     public long Bytes => (AppBytes ?? 0) + DataBytes;
 }
@@ -50,7 +51,9 @@ public sealed record AppCandidate(
     UninstallPlan? Uninstall,
     IReadOnlyList<string> KnownData,
     IReadOnlyList<string> KnownCaches,
-    string? Note = null);
+    string? Note = null,
+    UninstallPlan? QuietUninstall = null,
+    string? SharedInstallLocation = null);
 
 /// <summary>How to remove an app, and the thing (<see cref="Probe"/>) whose disappearance proves it is gone.</summary>
 public sealed record UninstallPlan(string Kind, string Target, string? Arguments = null, string? Probe = null)

@@ -130,6 +130,7 @@
   transition: background-color var(--fast);
 }
 .row.no-check { grid-template-columns: minmax(0, 1fr) minmax(120px, auto) 112px auto; padding-left: 16px; }
+.row.app-row { grid-template-columns: 24px minmax(0, 1fr) minmax(120px, auto) 112px auto; }
 .row:hover { background: var(--raised); }
 .row.is-selected { background: var(--accent-soft); }
 .row.is-busy { pointer-events: none; }
@@ -621,3 +622,14 @@
   .search input { width: 120px; }
   .app-detail-line { grid-template-columns: 90px minmax(0, 1fr) 70px 28px; }
 }
+.growth-hint { color: var(--ink-2); font-size: 11px; margin-top: 4px; max-width: 220px; }
+.history h3 { font-size: 13px; margin: 20px 0 10px; }
+.row.no-check.history-row { grid-template-columns: minmax(0, 1fr) auto; }
+.history-row .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.history-drives { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.history-figure { margin: 16px 0 0; }
+.history-chart { display: block; width: 100%; max-width: 640px; height: 84px; color: var(--accent-text); }
+
+/* Windows space: always-visible actions in a fixed column so sizes line up */
+.space-actions { display: flex; gap: 6px; justify-content: flex-end; min-width: 300px; }
+@media (max-width: 760px) { .space-actions { min-width: 0; flex-wrap: wrap; } }

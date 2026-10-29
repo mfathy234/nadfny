@@ -4,7 +4,7 @@ using Nadfny.Core;
 
 namespace Nadfny.Features.Artifacts;
 
-public sealed record ArtifactInfo(string Path, string Kind, string Tool, string Project, string ProjectPath, long Bytes, long Files, DateTime? LastWriteUtc);
+public sealed record ArtifactInfo(string Path, string Kind, string Tool, string Project, string ProjectPath, long Bytes, long Files, DateTime? LastWriteUtc, DateTime? ProjectLastUsedUtc);
 
 public sealed class ArtifactService
 {
@@ -18,6 +18,7 @@ public sealed class ArtifactService
         _known.Clear();
         var found = Channel.CreateUnbounded<Hit>(new UnboundedChannelOptions { SingleWriter = false });
         var results = new ConcurrentBag<ArtifactInfo>();
+        var lastUsed = new ConcurrentDictionary<string, Lazy<DateTime?>>(StringComparer.OrdinalIgnoreCase);
         var hits = 0;
         var sized = 0;
         var walking = true;
@@ -31,7 +32,8 @@ public sealed class ArtifactService
                 if (!walking) progress.CompleteOne(hit.Path);
                 if (size.Bytes == 0) return ValueTask.CompletedTask;
                 var info = new ArtifactInfo(hit.Path, hit.Rule.Kind, hit.Rule.Tool, Path.GetFileName(hit.Project), hit.Project,
-                    size.Bytes, size.Files, size.LastWriteUtc == DateTime.MinValue ? null : size.LastWriteUtc);
+                    size.Bytes, size.Files, size.LastWriteUtc == DateTime.MinValue ? null : size.LastWriteUtc,
+                    lastUsed.GetOrAdd(hit.Project, p => new Lazy<DateTime?>(() => ProjectActivity.LastUsedUtc(p, token))).Value);
                 _known[info.Path] = info.Bytes;
                 results.Add(info);
                 onFound(info);
@@ -113,7 +115,7 @@ public sealed class ArtifactService
             if (!c.IsDir) continue;
             var name = Path.GetFileName(c.Path);
             if (inProfileRoot && name.StartsWith('.')) continue;
-            if (ArtifactRules.Match(name, names) is { } rule)
+            if (ArtifactRules.MatchFolder(c.Path, names) is { } rule)
             {
                 writer.TryWrite(new Hit(c.Path, rule, dir)); // never descend into an artifact (nested node_modules belong to it)
                 Interlocked.Increment(ref hits);

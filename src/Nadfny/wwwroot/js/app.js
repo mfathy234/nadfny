@@ -5,17 +5,19 @@ import { fraction, scanPanel } from './views/progress.js';
 import { h, icon, toast } from './dom.js';
 import { bytes } from './format.js';
 import { setRenderer, state, update } from './store.js';
-import { appsView } from './views/apps.js';
+import { appsSelectionBar, appsView } from './views/apps.js';
 import { artifactSelectionBar, artifactsView } from './views/artifacts.js';
 import { cachesView } from './views/caches.js';
+import { scanSystemSpace } from './system-space-actions.js';
 import { dockerUsed, dockerView } from './views/docker.js';
 import { exploreView } from './views/explore.js';
+import { finderSelectionBar, finderView } from './views/finder.js';
 import { overviewView } from './views/overview.js';
 import { systemView } from './views/system.js';
 import { worktreeSelectionBar, worktreesView } from './views/worktrees.js';
 
-const VIEWS = [overviewView, worktreesView, dockerView, artifactsView, cachesView, appsView, exploreView, systemView];
-const SELECTION_BARS = { worktrees: worktreeSelectionBar, artifacts: artifactSelectionBar };
+const VIEWS = [overviewView, worktreesView, dockerView, artifactsView, cachesView, appsView, exploreView, finderView, systemView];
+const SELECTION_BARS = { worktrees: worktreeSelectionBar, artifacts: artifactSelectionBar, finder: finderSelectionBar, apps: appsSelectionBar };
 
 const $ = (id) => document.getElementById(id);
 
@@ -136,18 +138,19 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     VIEWS.find((v) => v.id === state.view)?.actions()[0]?.click();
   }
-  if (e.ctrlKey && /^[1-8]$/.test(e.key)) {
+  if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
     e.preventDefault();
     update((s) => { s.view = VIEWS[Number(e.key) - 1].id; });
   }
   if (e.key === 'Escape' && !$('dialog').open) {
-    update((s) => { s.selection.worktrees.clear(); s.selection.artifacts.clear(); });
+    update((s) => { s.selection.worktrees.clear(); s.selection.artifacts.clear(); s.finder.selected.clear(); });
   }
 });
 
 render();
 startUpdateChecks();
 loadSystemInfo(); // read-only and slow-ish: start now so This PC is ready when opened
+scanSystemSpace();
 loadInfo()
   .then(() => scanAll())
   .catch((err) => toast(err.message, 'bad'));
