@@ -3,6 +3,7 @@ import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
 import { ago, bytes, daysSince, isUnder, plural } from '../format.js';
 import { state, update } from '../store.js';
 import { checkbox, rowWrap, segmented } from './common.js';
+import { growthSize } from './history.js';
 
 const KINDS = [
   ['all', 'All', () => true],
@@ -117,7 +118,7 @@ function itemRow(a, groupMax) {
       a.lastWriteUtc ? ago(a.lastWriteUtc) : '',
       h('div', { class: 'row-actions' },
         h('button', { class: 'icon-btn', type: 'button', title: 'Show in Explorer', 'aria-label': `Show ${a.path} in Explorer`, onclick: (e) => { e.stopPropagation(); reveal(a.path); } }, icon('arrow-square-out')))),
-    sizeCell(bytes(a.bytes), a.bytes / Math.max(1, groupMax)));
+    growthSize('artifacts', a.path, sizeCell(bytes(a.bytes), a.bytes / Math.max(1, groupMax)), a.bytes));
 }
 
 function summarizeKinds(list) {
