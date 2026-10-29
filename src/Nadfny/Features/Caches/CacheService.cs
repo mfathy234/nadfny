@@ -88,16 +88,19 @@ public sealed partial class CacheService
         return list.OrderByDescending(c => c.Bytes).ToList();
     }
 
-    public async Task<long> ClearAsync(string id, OpReporter op, CancellationToken ct)
+    /// <param name="expectedPath">The folder the user saw; refused when the last scan resolved this id somewhere else.</param>
+    public async Task<long> ClearAsync(string id, OpReporter op, CancellationToken ct, string? expectedPath = null)
     {
         await _gate.WaitAsync(ct);
-        try { return await ClearCoreAsync(id, op, ct); }
+        try { return await ClearCoreAsync(id, expectedPath, op, ct); }
         finally { _gate.Release(); }
     }
 
-    private async Task<long> ClearCoreAsync(string id, OpReporter op, CancellationToken ct)
+    private async Task<long> ClearCoreAsync(string id, string? expectedPath, OpReporter op, CancellationToken ct)
     {
         var def = _scanned.GetValueOrDefault(id) ?? throw new InvalidOperationException("Scan caches again before clearing this item.");
+        if (expectedPath is not null && !Path.TrimEndingDirectorySeparator(expectedPath).Equals(Path.TrimEndingDirectorySeparator(def.Path), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("This cache moved since you looked at it. Scan caches again before clearing it.");
         if (!Directory.Exists(def.Path)) return 0;
         SafeDeleter.EnsureDeletable(def.Path);
         var isTemp = def.Id == "temp";

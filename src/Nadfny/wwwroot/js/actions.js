@@ -315,7 +315,7 @@ export async function clearCache(c) {
   if (!confirmed) return;
   update((s) => s.busy.add(`cache:${c.id}`));
   try {
-    const n = await runOp(`Clearing ${c.name}`, 'caches.clear', { id: c.id }, { key: `cache:${c.id}` });
+    const n = await runOp(`Clearing ${c.name}`, 'caches.clear', { id: c.id, path: c.path }, { key: `cache:${c.id}` });
     freed(n);
     update((s) => s.caches.items.set(c.id, { ...c, bytes: Math.max(0, c.bytes - n) }));
     toast(`${c.name} cleared. ${bytes(n)} freed.`);

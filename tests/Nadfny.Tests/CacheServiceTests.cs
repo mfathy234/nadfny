@@ -98,6 +98,7 @@ public sealed class CacheServiceTests : IDisposable
         var path = Write(@"go\pkg\mod\example\module.txt", 42);
         File.SetAttributes(path, FileAttributes.ReadOnly);
         File.SetAttributes(Path.GetDirectoryName(path)!, FileAttributes.Directory | FileAttributes.ReadOnly);
+        Directory.CreateDirectory(Path.Combine(_root, "go", "pkg", "mod", "cache", "download")); // what makes it a Go module cache
         var service = new CacheService(() => [new("go-mod", "Go modules", Path.Combine(_root, "go", "pkg", "mod"), "")]);
         var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
         Assert.Equal(42, await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None));
@@ -145,12 +146,24 @@ public sealed class CacheServiceTests : IDisposable
         Write(@"first\keep.txt", 42);
         var second = Write(@"second\keep.txt", 42);
         var path = Path.Combine(_root, "first");
-        var service = new CacheService(() => [new("go-mod", "Go modules", path, "")]);
+        var service = new CacheService(() => [new("npm", "npm cache", path, "")]);
         var first = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
         path = Path.Combine(_root, "second");
         await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync(Assert.Single(first).Id, OpReporter.None, CancellationToken.None));
+        var stale = Assert.Single(first);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync(stale.Id, OpReporter.None, CancellationToken.None, stale.Path));
         Assert.True(File.Exists(second));
+    }
+
+    [Fact]
+    public async Task Scan_IgnoresAGoModCachePathThatIsNotAModuleCache()
+    {
+        var thesis = Write(@"home\Documents\thesis.docx", 42);
+        var service = new CacheService(() => [new("go-mod", "Go modules", Path.Combine(_root, "home"), "")]);
+
+        Assert.Empty(await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ClearAsync("go-mod", OpReporter.None, CancellationToken.None));
+        Assert.True(File.Exists(thesis));
     }
 
     [Fact]

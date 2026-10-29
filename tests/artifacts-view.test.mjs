@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 globalThis.window = {};
+// The view's imports (history hints, store) schedule renders; Node has no animation frames.
+globalThis.requestAnimationFrame ??= (fn) => setTimeout(fn, 0);
 const artifacts = await import('../src/Nadfny/wwwroot/js/views/artifacts.js');
 const { visibleArtifacts } = artifacts;
 const { state } = await import('../src/Nadfny/wwwroot/js/store.js');

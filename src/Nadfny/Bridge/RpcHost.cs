@@ -104,7 +104,7 @@ public sealed class RpcHost
         "artifacts.check" => await _artifacts.CheckAsync(Paths(p), CancellationToken.None),
 
         "caches.scan" => await Scoped("caches", ct => _history.CaptureAsync(_caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct), ct)),
-        "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None, Str(p, "path") is { Length: > 0 } path ? path : null),
 
         "toolchains.scan" => await Scoped("toolchains", ct => _toolchains.ScanAsync(_settings.Roots, t => Emit("toolchains.item", t), Progress("toolchains"), ct)),
         "toolchains.remove" => await _toolchains.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
