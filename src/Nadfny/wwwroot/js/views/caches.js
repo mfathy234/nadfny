@@ -3,6 +3,8 @@ import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
 import { bytes, plural } from '../format.js';
 import { state } from '../store.js';
 import { rowWrap, withOpProgress } from './common.js';
+import { scanSystemSpace } from '../system-space-actions.js';
+import { systemSpaceSection } from './system-space.js';
 
 export const cachesView = {
   id: 'caches',
@@ -18,22 +20,22 @@ export const cachesView = {
   actions() {
     return [button('Rescan', {
       icon: 'arrow-clockwise', key: 'rescan', disabled: state.caches.status === 'scanning',
-      onClick: () => Promise.allSettled([scanCaches(), scanWindows(), queryRecycleBin()]),
+      onClick: () => Promise.allSettled([scanCaches(), scanWindows(), queryRecycleBin(), scanSystemSpace()]),
     })];
   },
 
   render() {
     const st = state.caches;
-    if (st.status === 'error') return emptyState({ ic: 'warning-circle', error: true, title: 'Scan failed', text: st.error, action: button('Try again', { onClick: scanCaches }) });
     const items = [...st.items.values()].sort((a, b) => b.bytes - a.bytes);
-    if (!items.length && st.status === 'scanning') return skeletonList(5);
     const max = Math.max(1, ...items.map((c) => c.bytes));
 
     return h('div', null,
       recycleSection(),
+      systemSpaceSection(),
       h('section', { class: 'section' },
         h('div', { class: 'section-head' }, h('h2', null, 'Developer caches'), h('span', { class: 'hint' }, 'Your tools download these again when needed')),
-        items.length
+        st.status === 'error' ? emptyState({ ic: 'warning-circle', error: true, title: 'Scan failed', text: st.error, action: button('Try again', { onClick: scanCaches }) })
+          : !items.length && st.status === 'scanning' ? skeletonList(5) : items.length
           ? h('div', { class: 'list' }, items.map((c) => cacheRow(c, max)))
           : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
       windowsSection());

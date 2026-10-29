@@ -9,6 +9,7 @@ using Nadfny.Features.Docker;
 using Nadfny.Features.Explore;
 using Nadfny.Features.RecycleBin;
 using Nadfny.Features.SystemInfo;
+using Nadfny.Features.SystemSpace;
 using Nadfny.Features.Updates;
 using Nadfny.Features.Windows;
 using Nadfny.Features.Worktrees;
@@ -31,6 +32,7 @@ public sealed class RpcHost
     private readonly ExploreService _explore = new();
     private readonly WindowsCleanupService _windows = new();
     private readonly SystemInfoService _system = new();
+    private readonly SystemSpaceService _systemSpace = new();
     private readonly UpdateService _updates = new();
     private readonly AppService _apps = new();
     private readonly Action _exitApp;
@@ -97,6 +99,10 @@ public sealed class RpcHost
 
         "windows.scan" => await Scoped("windows", ct => _windows.ScanAsync(ct)),
         "windows.clean" => await _windows.CleanAsync(Ids(p), Op(p), CancellationToken.None),
+
+        "systemSpace.scan" => await Scoped("systemSpace", ct => _systemSpace.ScanAsync(ct)),
+        "systemSpace.hibernate" => await _systemSpace.ChangeHibernationAsync(Str(p, "action"), Op(p)),
+        "systemSpace.settings" => SystemSpaceService.OpenSettings(Str(p, "kind")),
 
         "apps.scan" => await Scoped("apps", ct => _apps.ScanAsync(a => Emit("apps.item", a), Progress("apps"), ct)),
         "apps.clearCache" => await _apps.ClearCacheAsync(Str(p, "id"), Op(p), CancellationToken.None),

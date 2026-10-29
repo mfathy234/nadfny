@@ -31,6 +31,7 @@ Generic cleaners empty the Recycle Bin and browser caches. The space a developer
 | **Caches** | npm, pnpm, Yarn, NuGet, pip, Gradle, Maven, Playwright browsers and Temp, plus Windows update leftovers through Windows' own Disk Cleanup. |
 | **Apps & games** | Every installed app and game with its program size, the data it keeps in AppData and ProgramData, and its caches. Clear an app's cache in one click, uninstall it through its own uninstaller, then review the folders it left behind (they go to the Recycle Bin). Games are found in Steam, Epic, Xbox, GOG, Ubisoft, EA and Battle.net, and also in plain folders such as `D:\Games\Racing\…`, recognized by their engine files (Unity, Unreal, Godot, GameMaker, RPG Maker, Ren'Py). |
 | **Recycle Bin** | How much the Bin holds on each drive, and emptying it, since deleted files only free space once it is emptied. |
+| **Windows space** | Hibernation file size, confirmed controls to turn it off or reduce it, pagefile and swapfile sizes per drive, and restore-point counts and shadow storage usage. Pagefile and restore settings open in Windows; Nadfny does not delete restore points. |
 | **Explore** | Drill into any drive or folder by size, reveal in Explorer, or delete to the Recycle Bin. |
 | **This PC** | CPU, GPU (with real VRAM and clocks), every RAM stick, every drive (NVMe, SATA, HDD), displays, motherboard and BIOS, each with a copy button. It even tells you when your RAM is running below its rated speed. |
 
