@@ -1,6 +1,6 @@
 import { removeArtifacts, reveal, scanArtifacts } from '../actions.js';
 import { button, emptyState, h, icon, sizeCell, skeletonList } from '../dom.js';
-import { ago, bytes, daysSince, isUnder, plural } from '../format.js';
+import { ago, bytes, daysSince, plural } from '../format.js';
 import { state, update } from '../store.js';
 import { checkbox, rowWrap, segmented } from './common.js';
 
@@ -10,21 +10,34 @@ const KINDS = [
   ['dotnet', 'bin & obj', (a) => a.kind === 'bin' || a.kind === 'obj'],
   ['other', 'Other', (a) => !['node_modules', 'bin', 'obj'].includes(a.kind)],
 ];
-const AGES = [[0, 'Any age'], [30, 'Untouched 30+ days'], [90, '90+ days']];
+const AGES = [[0, 'Any age'], [30, 'Untouched 30+ days'], [90, '90+ days'], [180, '6+ months'], [365, '1+ year']];
 
 export function visibleArtifacts() {
   const kind = KINDS.find(([k]) => k === state.artifacts.kind)?.[2] ?? (() => true);
   const age = state.artifacts.age;
-  return [...state.artifacts.items.values()].filter((a) => kind(a) && (age === 0 || daysSince(a.lastWriteUtc) >= age));
+  return [...state.artifacts.items.values()].filter((a) => kind(a)
+    && (age === 0 || (a.projectLastUsedUtc && daysSince(a.projectLastUsedUtc) >= age)));
 }
 
-/** Groups by the top-level folder under the scan location (one repo or worktree per group). */
-function groupKey(a) {
-  const root = state.info.roots.find((r) => isUnder(a.path, r));
-  if (!root) return a.projectPath;
-  const rest = a.path.slice(root.replace(/[\\/]+$/, '').length + 1);
-  const first = rest.split('\\')[0];
-  return first === a.kind ? a.projectPath : `${root.replace(/[\\/]+$/, '')}\\${first}`;
+export function groupArtifacts(items, sort = 'size') {
+  const groups = new Map();
+  for (const a of items) {
+    const key = a.projectPath;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
+  }
+  return [...groups.entries()]
+    .map(([key, list]) => ({ key, list, total: list.reduce((s, a) => s + a.bytes, 0),
+      lastUsed: list.map(a => a.projectLastUsedUtc).filter(Boolean).sort().pop() }))
+    .sort((a, b) => {
+      if (sort === 'oldest') {
+        if (!a.lastUsed && b.lastUsed) return 1;
+        if (a.lastUsed && !b.lastUsed) return -1;
+        const age = new Date(a.lastUsed).getTime() - new Date(b.lastUsed).getTime();
+        if (age) return age;
+      }
+      return b.total - a.total;
+    });
 }
 
 export const artifactsView = {
@@ -51,22 +64,16 @@ export const artifactsView = {
     if (st.items.size === 0) return emptyState({ ic: 'hammer', title: 'No build output found', text: 'Nothing regenerable in your scan locations. Add a location from the sidebar if your projects live elsewhere.' });
 
     const items = visibleArtifacts();
-    const groups = new Map();
-    for (const a of items) {
-      const key = groupKey(a);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(a);
-    }
-    const ordered = [...groups.entries()]
-      .map(([key, list]) => ({ key, list, total: list.reduce((s, a) => s + a.bytes, 0) }))
-      .sort((a, b) => b.total - a.total);
+    const ordered = groupArtifacts(items, st.sort);
     const max = Math.max(1, ...ordered.map((g) => g.total));
     const allSelected = items.length > 0 && items.every((a) => state.selection.artifacts.has(a.path));
 
     return h('div', null,
       h('div', { class: 'filters' },
         segmented(KINDS.map(([value, label]) => ({ value, label })), st.kind, (v) => update((s) => { s.artifacts.kind = v; }), 'Folder kind'),
-        segmented(AGES.map(([value, label]) => ({ value, label })), st.age, (v) => update((s) => { s.artifacts.age = v; }), 'Last change'),
+        segmented(AGES.map(([value, label]) => ({ value, label })), st.age, (v) => update((s) => { s.artifacts.age = v; }), 'Last used'),
+        segmented([{ value: 'size', label: 'Size' }, { value: 'oldest', label: 'Oldest first' }], st.sort ?? 'size',
+          (v) => update((s) => { s.artifacts.sort = v; }), 'Sort projects'),
         h('span', { class: 'spacer' }),
         items.length > 0 && button(allSelected ? 'Deselect all' : `Select all ${items.length}`, {
           variant: 'quiet', small: true, key: 'select-all',
@@ -78,11 +85,10 @@ export const artifactsView = {
   },
 };
 
-function projectRow({ key, list, total }, max) {
+function projectRow({ key, list, total, lastUsed }, max) {
   const sel = state.selection.artifacts;
   const selected = list.filter((a) => sel.has(a.path)).length;
   const expanded = state.artifacts.expanded.has(key);
-  const last = list.map((a) => a.lastWriteUtc).filter(Boolean).sort().pop();
   const kinds = summarizeKinds(list);
   const isWorktree = state.worktrees.items.has(key);
   const setAll = (on) => update((s) => list.forEach((a) => (on ? s.selection.artifacts.add(a.path) : s.selection.artifacts.delete(a.path))));
@@ -98,7 +104,7 @@ function projectRow({ key, list, total }, max) {
           h('span', { class: 'name' }, key.split('\\').pop()),
           isWorktree && h('span', { class: 'badge' }, icon('git-branch'), 'Worktree')),
         h('div', { class: 'row-sub' }, kinds)),
-      h('div', { class: 'row-meta' }, last ? `Changed ${ago(last)}` : ''),
+      h('div', { class: 'row-meta', title: 'Newest source file write, checked up to 3 folders deep' }, lastUsed ? `Last used ${ago(lastUsed)}` : 'Last used unknown'),
       sizeCell(bytes(total), total / max))),
     expanded && [...list].sort((a, b) => b.bytes - a.bytes).map((a, _, sorted) => rowWrap(a.path, itemRow(a, sorted[0].bytes))),
   ];

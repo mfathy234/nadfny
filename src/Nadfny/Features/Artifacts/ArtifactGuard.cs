@@ -20,6 +20,8 @@ public static class ArtifactGuard
     {
         ".cs", ".vb", ".fs", ".razor", ".cshtml", ".csproj", ".vbproj", ".fsproj", ".sln", ".slnx",
         ".ts", ".tsx", ".jsx", ".vue", ".svelte", ".py", ".rs", ".go",
+        ".js", ".mjs", ".cjs", ".gd", ".gdshader", ".dart", ".ex", ".exs", ".erl", ".hrl",
+        ".swift", ".m", ".mm", ".h", ".hpp", ".c", ".cc", ".cpp", ".cxx", ".java", ".kt", ".kts",
     };
 
     private static readonly string[] GeneratedSuffixes =
@@ -38,8 +40,7 @@ public static class ArtifactGuard
     // Package/environment folders are regenerated wholesale and legitimately contain .ts/.py/.props files.
     private static readonly HashSet<string> PackageKinds = new(StringComparer.OrdinalIgnoreCase)
     {
-        "node_modules", ".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".next", ".nuxt",
-        ".svelte-kit", ".turbo", ".angular", ".parcel-cache", ".gradle", ".vs",
+        "node_modules", ".venv", "venv", ".next", ".vs",
     };
 
     public static async Task<IReadOnlyList<GuardVerdict>> EvaluateAsync(IReadOnlyList<string> folders, CancellationToken ct)
@@ -96,6 +97,10 @@ public static class ArtifactGuard
 
     private static string? FindHandWrittenSource(string folder)
     {
+        var dotNetObj = Path.GetFileName(folder).Equals("obj", StringComparison.OrdinalIgnoreCase)
+            && Path.GetDirectoryName(folder) is { } parent
+            && ArtifactRules.Match("obj", new HashSet<string>(DirectorySizer.Shallow(parent)
+                .Select(e => Path.GetFileName(e.Path)), StringComparer.OrdinalIgnoreCase))?.Tool == ".NET build";
         var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint };
         var candidates = new FileSystemEnumerable<string>(folder, (ref FileSystemEntry e) => e.ToFullPath(), options)
         {
@@ -103,7 +108,10 @@ public static class ArtifactGuard
                 && SourceExtensions.Contains(Path.GetExtension(e.FileName).ToString())
                 && !HasGeneratedName(e.FileName.ToString()),
         };
-        try { return candidates.FirstOrDefault(f => !HasGeneratedHeader(f)); }
+        // .NET's Android SDK writes platform stubs without headers under obj/.../android/src.
+        bool AndroidStub(string file) => dotNetObj && Path.GetExtension(file).Equals(".java", StringComparison.OrdinalIgnoreCase)
+            && ("/" + Path.GetRelativePath(folder, file).Replace('\\', '/')).Contains("/android/src/", StringComparison.OrdinalIgnoreCase);
+        try { return candidates.FirstOrDefault(f => !AndroidStub(f) && !HasGeneratedHeader(f)); }
         catch (DirectoryNotFoundException) { return null; }
     }
 
