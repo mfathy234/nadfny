@@ -9,6 +9,7 @@ export const state = {
   progress: {},
   worktrees: { ...scan(), filter: 'all' },
   docker: { status: 'idle', error: null, report: null, tab: 'images' },
+  wsl: { status: 'idle', error: null, report: null },
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
   toolchains: { ...scan(), warnings: [] },

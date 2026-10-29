@@ -7,6 +7,7 @@ import { animateOut, state, update } from './store.js';
 import { setStreaming } from './views/common.js';
 import { isRisky } from './views/worktrees-model.js';
 import { scanToolchains } from './toolchains-actions.js';
+import { scanWsl } from './wsl-actions.js';
 
 on('worktrees.item', (w) => update((s) => s.worktrees.items.set(w.path, w)));
 on('artifacts.item', (a) => update((s) => s.artifacts.items.set(a.path, a)));
@@ -80,7 +81,7 @@ export async function refreshDrives() {
 }
 
 export function scanAll() {
-  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanToolchains(), scanWindows(), queryRecycleBin()]);
+  return Promise.allSettled([scanWorktrees(), scanDocker(), scanArtifacts(), scanCaches(), scanToolchains(), scanWindows(), scanWsl(), queryRecycleBin()]);
 }
 
 /* ---------- Recycle Bin ---------- */
