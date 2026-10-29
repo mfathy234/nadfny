@@ -12,6 +12,7 @@ export const state = {
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
   toolchains: { ...scan(), warnings: [] },
+  aiModels: scan(),
   apps: { ...scan(), filter: 'all', query: '', expanded: new Set(), queueRunning: false },
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },
