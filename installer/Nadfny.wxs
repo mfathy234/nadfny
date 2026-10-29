@@ -1,0 +1,41 @@
+<!--
+  Per-user MSI for Nadfny: no administrator rights, installs to %LocalAppData%\Programs\Nadfny,
+  adds a Start menu shortcut, and upgrades in place when a newer version is installed.
+  Built by build/release.ps1 (WiX Toolset v5, restored as a local dotnet tool).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Nadfny"
+           Manufacturer="mfathy234"
+           Version="$(var.Version)"
+           UpgradeCode="6F2C1D8A-4B7E-4E3B-9C55-2E8A71D0B6F4"
+           Scope="perUser"
+           Compressed="yes">
+    <SummaryInformation Description="Nadfny: find and clean what is eating your disk" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Nadfny is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(sys.SOURCEFILEDIR)..\src\Nadfny\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/mfathy234/nadfny" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Nadfny" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="0B6E3F52-6C1D-4F0A-8E2B-7D4C9A1F3E60">
+        <Shortcut Id="AppShortcut" Name="Nadfny" Description="Find and clean what is eating your disk"
+                  Target="[INSTALLFOLDER]Nadfny.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Nadfny" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Nadfny">
+      <Files Include="$(var.PublishDir)\**" Directory="INSTALLFOLDER" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Nadfny logo: a broom sweeping a drive clean">
+  <rect x="8" y="8" width="240" height="240" rx="58" fill="#0c0e12"/>
+  <rect x="40" y="96" width="176" height="104" rx="26" fill="#34d399"/>
+  <rect x="62" y="166" width="78" height="12" rx="6" fill="#06281c"/>
+  <circle cx="190" cy="172" r="8" fill="#06281c"/>
+  <g transform="rotate(38 150 96)">
+    <rect x="143" y="10" width="14" height="80" rx="7" fill="#a7f3d0"/>
+    <rect x="128" y="84" width="44" height="14" rx="7" fill="#e2fbef"/>
+    <path d="M132 98h36l10 34c1.2 4.5-2 8-6.5 8h-43c-4.5 0-7.7-3.5-6.5-8Z" fill="#a7f3d0"/>
+    <path d="M138 136v-9M150 136v-9M162 136v-9" stroke="#06281c" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <path transform="translate(48 34) scale(1.3)" d="M18 0c2.6 11.2 6.8 15.4 18 18-11.2 2.6-15.4 6.8-18 18-2.6-11.2-6.8-15.4-18-18 11.2-2.6 15.4-6.8 18-18Z" fill="#34d399"/>
+  <path transform="translate(92 62) scale(.6)" d="M18 0c2.6 11.2 6.8 15.4 18 18-11.2 2.6-15.4 6.8-18 18-2.6-11.2-6.8-15.4-18-18 11.2-2.6 15.4-6.8 18-18Z" fill="#34d399" opacity=".7"/>
+</svg>

@@ -1,0 +1,126 @@
+/*
+  Nadfny tokens. Restrained strategy: cool tinted neutrals + one accent, shared with sibling app Dawsha (mint #34d399 on near-black #0c0e12).
+  Category colors come from a CVD-validated categorical order (blue, orange, aqua, yellow) and are
+  only ever shown next to a text label.
+*/
+:root {
+  color-scheme: light;
+
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+
+  --surface: oklch(1 0 0);
+  --sidebar: oklch(0.965 0.004 255);
+  --raised: oklch(0.982 0.003 255);
+  --hover: oklch(0.948 0.005 255);
+  --selected: oklch(0.925 0.03 165);
+  --line: oklch(0.91 0.005 255);
+  --line-strong: oklch(0.845 0.007 255);
+
+  --ink: oklch(0.2 0.012 255);
+  --ink-2: oklch(0.45 0.012 255);
+  --ink-3: oklch(0.56 0.01 255);
+
+  /* Dawsha mint (#34d399) carries deep-green ink (#06281c), never white. */
+  --accent: #34d399;
+  --accent-hover: #2bc48c;
+  --accent-ink: #06281c;
+  --accent-soft: oklch(0.955 0.035 165);
+  --accent-text: oklch(0.47 0.1 165);
+  --focus: oklch(0.52 0.11 165);
+
+  --danger: oklch(0.55 0.2 27);
+  --danger-hover: oklch(0.5 0.2 27);
+  --danger-ink: oklch(0.99 0 0);
+
+  --good: oklch(0.52 0.13 152);
+  --good-soft: oklch(0.95 0.04 152);
+  --warn: oklch(0.52 0.12 62);
+  --warn-soft: oklch(0.96 0.05 80);
+  --bad: oklch(0.53 0.2 27);
+  --bad-soft: oklch(0.96 0.03 27);
+
+  --cat-worktrees: #2a78d6;
+  --cat-docker: #eb6834;
+  --cat-build: #1baf7a;
+  --cat-caches: #eda100;
+  --cat-other: oklch(0.78 0.006 255);
+  --cat-free: oklch(0.93 0.004 255);
+
+  --scrim: oklch(0.2 0.01 255 / 0.32);
+  --material: oklch(1 0 0 / 0.78);
+  --material-strong: oklch(0.99 0.002 255 / 0.9);
+  --shadow-float: 0 1px 0 oklch(1 0 0 / 0.6) inset, 0 10px 30px oklch(0.25 0.03 255 / 0.16), 0 1px 3px oklch(0.25 0.03 255 / 0.12);
+  --shadow-sheet: 0 24px 64px oklch(0.2 0.03 255 / 0.28), 0 2px 8px oklch(0.2 0.03 255 / 0.12);
+
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 14px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --fast: 140ms;
+  --base: 220ms;
+
+  --z-sticky: 10;
+  --z-selection: 20;
+  --z-dialog: 40;
+  --z-toast: 50;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: oklch(0.185 0.008 265);
+    --sidebar: oklch(0.155 0.007 265);
+    --raised: oklch(0.21 0.009 265);
+    --hover: oklch(0.24 0.01 265);
+    --selected: oklch(0.29 0.045 165);
+    --line: oklch(0.275 0.01 265);
+    --line-strong: oklch(0.35 0.012 265);
+
+    --ink: oklch(0.96 0.004 255);
+    --ink-2: oklch(0.76 0.01 255);
+    --ink-3: oklch(0.65 0.01 255);
+
+    --accent: #34d399;
+    --accent-hover: #4ade9f;
+    --accent-ink: #06281c;
+    --accent-soft: oklch(0.3 0.05 165);
+    --accent-text: #34d399;
+    --focus: #34d399;
+
+    --danger: oklch(0.6 0.19 27);
+    --danger-hover: oklch(0.65 0.19 27);
+    --danger-ink: oklch(0.99 0 0);
+
+    --good: oklch(0.76 0.14 152);
+    --good-soft: oklch(0.3 0.05 152);
+    --warn: oklch(0.8 0.13 75);
+    --warn-soft: oklch(0.32 0.05 75);
+    --bad: oklch(0.72 0.16 27);
+    --bad-soft: oklch(0.32 0.06 27);
+
+    --cat-worktrees: #3987e5;
+    --cat-docker: #d95926;
+    --cat-build: #199e70;
+    --cat-caches: #c98500;
+    --cat-other: oklch(0.45 0.008 255);
+    --cat-free: oklch(0.29 0.005 255);
+
+    --scrim: oklch(0.05 0 0 / 0.55);
+    --material: oklch(0.21 0.005 255 / 0.8);
+    --material-strong: oklch(0.25 0.006 255 / 0.92);
+    --shadow-float: 0 1px 0 oklch(1 0 0 / 0.06) inset, 0 12px 32px oklch(0 0 0 / 0.45), 0 1px 3px oklch(0 0 0 / 0.4);
+    --shadow-sheet: 0 24px 64px oklch(0 0 0 / 0.55), 0 0 0 1px oklch(1 0 0 / 0.06);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --line: var(--line-strong); --ink-2: var(--ink); --ink-3: var(--ink-2); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root { --material: var(--surface); --material-strong: var(--raised); }
+}

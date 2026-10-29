@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; img-src 'self' data:">
+  <title>Nadfny</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="vendor/phosphor/phosphor.css">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/components.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar" aria-label="Sections">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="30" height="30">
+      <span>Nadfny</span>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-foot" id="sidebar-foot"></div>
+  </aside>
+
+  <main class="main" id="main" tabindex="-1">
+    <header class="toolbar" id="toolbar"></header>
+    <div class="content" id="content"></div>
+    <div class="selection-bar" id="selection-bar" aria-live="polite"></div>
+  </main>
+
+  <dialog class="sheet" id="dialog"></dialog>
+  <div id="activity"></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>
