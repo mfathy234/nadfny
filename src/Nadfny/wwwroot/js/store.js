@@ -15,7 +15,7 @@ export const state = {
   caches: scan(),
   toolchains: { ...scan(), warnings: [] },
   aiModels: scan(),
-  apps: { ...scan(), filter: 'all', query: '', expanded: new Set(), queueRunning: false },
+  apps: { ...scan(), filter: 'all', drive: 'all', query: '', expanded: new Set(), queueRunning: false },
   windows: { status: 'idle', error: null, items: [] },
   recycle: { status: 'idle', error: null, info: null },
   system: { status: 'idle', error: null, info: null },
