@@ -24,7 +24,7 @@ function visibleApps() {
   const pass = FILTERS.find(([k]) => k === state.apps.filter)?.[2] ?? (() => true);
   const q = state.apps.query.trim().toLowerCase();
   return [...state.apps.items.values()]
-    .filter((a) => pass(a) && (!q || `${a.name} ${a.publisher ?? ''} ${a.launcher ?? ''}`.toLowerCase().includes(q)))
+    .filter((a) => pass(a) && (!q || `${a.name} ${a.publisher ?? ''} ${a.launcher ?? ''} ${a.drive ?? ''}`.toLowerCase().includes(q)))
     .sort((a, b) => total(b) - total(a));
 }
 
@@ -103,7 +103,8 @@ function appRow(a, max) {
           h('span', { class: 'name', title: a.name }, a.name),
           a.broken && h('span', { class: 'badge' }, 'Uninstaller missing'),
           a.isGame && h('span', { class: 'badge' }, icon('game-controller'), 'Game'),
-          badgeText && !(a.isGame && badgeIcon === 'game-controller') && h('span', { class: 'badge' }, icon(badgeIcon), badgeText)),
+          badgeText && !(a.isGame && badgeIcon === 'game-controller') && h('span', { class: 'badge' }, icon(badgeIcon), badgeText),
+          a.drive && h('span', { class: 'badge', title: `Installed on ${a.drive}` }, icon('hard-drives'), a.drive)),
         h('div', { class: 'row-sub' }, sub || ' '),
         a.note && a.source !== 'folder' && h('div', { class: 'row-sub' }, icon('info'), a.note)),
       h('div', { class: 'row-meta' }, a.appBytes == null ? 'App size unknown' : ''),

@@ -31,7 +31,8 @@ public sealed record AppInfo(
     IReadOnlyList<AppFolder> Caches,
     bool CanUninstall,
     string? Note,
-    bool Broken = false)
+    bool Broken = false,
+    string? Drive = null) // "Games (D:)": the drive the program folder is on
 {
     public long Bytes => (AppBytes ?? 0) + DataBytes;
 }

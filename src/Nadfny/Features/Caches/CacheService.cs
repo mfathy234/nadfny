@@ -8,6 +8,7 @@ public sealed record CacheInfo(string Id, string Name, string Path, string Note,
 /// <summary>Package-manager and tool caches. Clearing empties the folder; the tool re-downloads on demand.</summary>
 public sealed partial class CacheService
 {
+    private const string TempId = "temp";
     private static readonly TimeSpan RecentWindow = TimeSpan.FromHours(24);
     // Folders shared with running programs or written while a crash is being saved: recent files are never cleared.
     private static readonly HashSet<string> KeepsRecentFiles = ["temp", "crash-dumps", "wer-archive", "wer-queue"];
@@ -41,7 +42,7 @@ public sealed partial class CacheService
             new("gradle", "Gradle caches", Path.Combine(home, ".gradle", "caches"), "Dependencies are downloaded again on the next build."),
             new("maven", "Maven repository", Path.Combine(home, ".m2", "repository"), "Downloaded again on the next build. Artifacts you built with mvn install are lost."),
             new("cargo", "Cargo registry", Path.Combine(home, ".cargo", "registry"), "Crates are downloaded again on the next build."),
-            new("temp", "Temporary files", Path.GetTempPath(), "Anything changed in the last 24 hours, and files in use, are kept."),
+            new("temp", "Temporary files", Path.GetTempPath(), $"Anything changed in the last 24 hours, files in use, and AI tool folders ({TempKeepRules.AiToolNames}) are kept."),
         ];
         AddDeveloperCaches(definitions, home, local, roaming, environment);
         AddCrashDumpCaches(definitions, local);
@@ -74,7 +75,7 @@ public sealed partial class CacheService
         progress.SetPhase("Measuring caches", present.Count);
         await Parallel.ForEachAsync(present, ct, (d, token) =>
         {
-            var bytes = d.Id.StartsWith("conda-", StringComparison.Ordinal)
+            var bytes = d.Id.StartsWith("conda-", StringComparison.Ordinal) || d.Id == TempId
                 ? Children(d).Sum(c => c.IsDir ? DirectorySizer.MeasureSequential(c.Path, token).Bytes : c.Length)
                 : DirectorySizer.MeasureSequential(d.Path, token).Bytes;
             // Stable ids: history compares sizes across scans by id. Clearing still only accepts ids from this scan.
@@ -106,7 +107,7 @@ public sealed partial class CacheService
             throw new InvalidOperationException("This cache moved since you looked at it. Scan caches again before clearing it.");
         if (!Directory.Exists(def.Path)) return 0;
         SafeDeleter.EnsureDeletable(def.Path);
-        var isTemp = def.Id == "temp";
+        var isTemp = def.Id == TempId;
         if (isTemp && !Path.TrimEndingDirectorySeparator(def.Path).EndsWith("Temp", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"The temp folder points somewhere unexpected ({def.Path}), so it was not cleared.");
 
@@ -142,8 +143,14 @@ public sealed partial class CacheService
         return freed;
     }
 
+    /// <summary>What clearing would remove: conda keeps only its package cache, Temp leaves AI tool folders alone.</summary>
     private static List<(bool IsDir, string Path, long Length, long WriteTicks)> Children(CacheDefinition definition) =>
-        DirectorySizer.Shallow(definition.Path).Where(c => !definition.Id.StartsWith("conda-", StringComparison.Ordinal) ||
-            (c.IsDir ? Path.GetFileName(c.Path).Equals("cache", StringComparison.OrdinalIgnoreCase)
-                : c.Path.EndsWith(".conda", StringComparison.OrdinalIgnoreCase) || c.Path.EndsWith(".tar.bz2", StringComparison.OrdinalIgnoreCase))).ToList();
+        DirectorySizer.Shallow(definition.Path).Where(c => definition.Id switch
+        {
+            TempId => !TempKeepRules.IsAiToolFolder(Path.GetFileName(c.Path)),
+            _ when definition.Id.StartsWith("conda-", StringComparison.Ordinal) => c.IsDir
+                ? Path.GetFileName(c.Path).Equals("cache", StringComparison.OrdinalIgnoreCase)
+                : c.Path.EndsWith(".conda", StringComparison.OrdinalIgnoreCase) || c.Path.EndsWith(".tar.bz2", StringComparison.OrdinalIgnoreCase),
+            _ => true,
+        }).ToList();
 }

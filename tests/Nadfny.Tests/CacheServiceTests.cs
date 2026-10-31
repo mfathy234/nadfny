@@ -65,6 +65,60 @@ public sealed class CacheServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_root, "Temp", "busy-tool", "deep", "nested", "fresh.lock")));
     }
 
+    [Fact]
+    public async Task Temp_LeavesAiToolFoldersOutOfTheSizeAndTheClear()
+    {
+        var old = DateTime.UtcNow.AddDays(-5);
+        Write(@"Temp\claude\session\scratch.txt", 1000, old);
+        Write(@"Temp\codex-trial-tests\out.bin", 400, old);
+        Write(@"Temp\ollama123\model.part", 300, old);
+        Write(@"Temp\old-installer\setup.tmp", 100, old);
+        Write(@"Temp\claudette-notes.log", 20, old); // only the tool name followed by a separator counts
+        var service = new CacheService(() => [new CacheDefinition("temp", "Temporary files", Path.Combine(_root, "Temp"), "")]);
+
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        var freed = await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None);
+
+        Assert.Equal(120, Assert.Single(scanned).Bytes);
+        Assert.Equal(120, freed);
+        Assert.True(File.Exists(Path.Combine(_root, "Temp", "claude", "session", "scratch.txt")));
+        Assert.True(File.Exists(Path.Combine(_root, "Temp", "codex-trial-tests", "out.bin")));
+        Assert.True(File.Exists(Path.Combine(_root, "Temp", "ollama123", "model.part")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Temp", "old-installer")));
+        Assert.False(File.Exists(Path.Combine(_root, "Temp", "claudette-notes.log")));
+    }
+
+    [Fact]
+    public async Task OtherCaches_DoNotSkipFoldersNamedAfterAiTools()
+    {
+        Write(@"npm\claude\pkg.tgz", 70);
+        var service = new CacheService(() => [new CacheDefinition("npm", "npm cache", Path.Combine(_root, "npm"), "")]);
+
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+
+        Assert.Equal(70, await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData("claude", true)]
+    [InlineData("Claude-Code", true)]
+    [InlineData("ClaudeCode", true)]
+    [InlineData("claudecode-1234", true)]
+    [InlineData("codex_tmp", true)]
+    [InlineData("cursor-updater", true)]
+    [InlineData("ollama", true)]
+    [InlineData("ollama20481", true)]
+    [InlineData("lm-studio", true)]
+    [InlineData("LMStudio.cache", true)]
+    [InlineData("github-copilot", true)]
+    [InlineData("chatgpt", true)]
+    [InlineData("claudette", false)]
+    [InlineData("DockerDesktop", false)]
+    [InlineData("jest", false)]
+    [InlineData("cursorless", false)]
+    public void TempKeepRules_RecognisesAiToolFolders(string name, bool expected) =>
+        Assert.Equal(expected, TempKeepRules.IsAiToolFolder(name));
+
     [Theory]
     [InlineData("crash-dumps")]
     [InlineData("wer-archive")]

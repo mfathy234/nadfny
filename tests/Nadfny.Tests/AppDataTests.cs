@@ -110,6 +110,20 @@ public sealed class AppDataTests : IDisposable
     }
 
     [Fact]
+    public async Task Scan_NamesTheDriveTheAppIsInstalledOn()
+    {
+        var folder = Path.Combine(_root, "Games", "Spider-Man 2");
+        Write(@"Games\Spider-Man 2\game.exe", 100);
+        var service = new AppService(_ => Task.FromResult<IReadOnlyList<AppCandidate>>([App("spidey", "Spider-Man 2", location: folder), App("nowhere", "No folder")]),
+            () => [], () => []);
+
+        var apps = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+
+        Assert.EndsWith($"({folder[..2].ToUpperInvariant()})", apps.Single(a => a.Id == "spidey").Drive);
+        Assert.Null(apps.Single(a => a.Id == "nowhere").Drive);
+    }
+
+    [Fact]
     public async Task Leftovers_SkipFoldersAnotherAppUses()
     {
         Write(@"Roaming\Gone\state.db");
