@@ -111,6 +111,11 @@ public sealed class UpdateService
     public void InstallAndRestart()
     {
         var installer = _downloaded ?? throw new InvalidOperationException("Download the update first.");
+        if (!File.Exists(installer))
+        {
+            _downloaded = null;
+            throw new UpdateMissingException("The downloaded update was removed. Nadfny will download it again.");
+        }
         var exe = Path.Combine(AppContext.BaseDirectory, "Nadfny.exe");
         var pid = Environment.ProcessId;
         // Wait for this process to exit, upgrade with a small progress window, then relaunch.
@@ -202,3 +207,6 @@ public sealed class UpdateService
         return http;
     }
 }
+
+/// <summary>The downloaded installer is gone (for example Temp was cleared); the page downloads it again.</summary>
+public sealed class UpdateMissingException(string message) : InvalidOperationException(message);

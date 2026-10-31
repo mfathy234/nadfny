@@ -1,18 +1,27 @@
 using System.Text.Json;
+using Nadfny.Features.Caches;
 
 namespace Nadfny.Core;
 
-public sealed record AppSettings(IReadOnlyList<string> Roots)
+public sealed record AppSettings(IReadOnlyList<string> Roots, IReadOnlyList<string>? TempKeep = null)
 {
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nadfny", "settings.json");
+
+    /// <summary>Folder-name patterns Temp clearing leaves alone. Empty for settings files saved before this existed.</summary>
+    public IReadOnlyList<string> KeepNames => TempKeep ?? [];
 
     public static AppSettings Load()
     {
         try
         {
-            if (File.Exists(FilePath) && JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Json.Options) is { Roots.Count: > 0 } s)
-                return s with { Roots = s.Roots.Where(Directory.Exists).ToList() };
+            if (File.Exists(FilePath) && JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Json.Options) is { } s)
+            {
+                var keep = TempKeepList.Clean(s.TempKeep);
+                return s.Roots is { Count: > 0 }
+                    ? s with { Roots = s.Roots.Where(Directory.Exists).ToList(), TempKeep = keep }
+                    : Defaults() with { TempKeep = keep };
+            }
         }
         catch (Exception ex) when (ex is IOException or JsonException) { /* fall back to defaults */ }
         return Defaults();

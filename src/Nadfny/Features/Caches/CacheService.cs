@@ -8,17 +8,21 @@ public sealed record CacheInfo(string Id, string Name, string Path, string Note,
 /// <summary>Package-manager and tool caches. Clearing empties the folder; the tool re-downloads on demand.</summary>
 public sealed partial class CacheService
 {
+    private const string TempId = "temp";
     private static readonly TimeSpan RecentWindow = TimeSpan.FromHours(24);
     // Folders shared with running programs or written while a crash is being saved: recent files are never cleared.
     private static readonly HashSet<string> KeepsRecentFiles = ["temp", "crash-dumps", "wer-archive", "wer-queue"];
     private readonly Func<IReadOnlyList<CacheDefinition>> _definitions;
     private readonly bool _resolveGo;
+    private readonly Func<IReadOnlyList<string>> _keepList;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IReadOnlyDictionary<string, CacheDefinition> _scanned = new Dictionary<string, CacheDefinition>();
 
     /// <param name="definitions">Override the cache list (tests point it at dummy folders).</param>
-    public CacheService(Func<IReadOnlyList<CacheDefinition>>? definitions = null)
+    /// <param name="keepList">The user's keep patterns for Temp, read each time Temp is measured or cleared.</param>
+    public CacheService(Func<IReadOnlyList<CacheDefinition>>? definitions = null, Func<IReadOnlyList<string>>? keepList = null)
     {
+        _keepList = keepList ?? (() => []);
         _definitions = definitions ?? (() => Definitions());
         _resolveGo = definitions is null;
     }
@@ -41,7 +45,7 @@ public sealed partial class CacheService
             new("gradle", "Gradle caches", Path.Combine(home, ".gradle", "caches"), "Dependencies are downloaded again on the next build."),
             new("maven", "Maven repository", Path.Combine(home, ".m2", "repository"), "Downloaded again on the next build. Artifacts you built with mvn install are lost."),
             new("cargo", "Cargo registry", Path.Combine(home, ".cargo", "registry"), "Crates are downloaded again on the next build."),
-            new("temp", "Temporary files", Path.GetTempPath(), "Anything changed in the last 24 hours, and files in use, are kept."),
+            new("temp", "Temporary files", Path.GetTempPath(), $"Anything changed in the last 24 hours, files in use, and AI tool folders ({TempKeepRules.AiToolNames}) are kept."),
         ];
         AddDeveloperCaches(definitions, home, local, roaming, environment);
         AddCrashDumpCaches(definitions, local);
@@ -74,7 +78,7 @@ public sealed partial class CacheService
         progress.SetPhase("Measuring caches", present.Count);
         await Parallel.ForEachAsync(present, ct, (d, token) =>
         {
-            var bytes = d.Id.StartsWith("conda-", StringComparison.Ordinal)
+            var bytes = d.Id.StartsWith("conda-", StringComparison.Ordinal) || d.Id == TempId
                 ? Children(d).Sum(c => c.IsDir ? DirectorySizer.MeasureSequential(c.Path, token).Bytes : c.Length)
                 : DirectorySizer.MeasureSequential(d.Path, token).Bytes;
             // Stable ids: history compares sizes across scans by id. Clearing still only accepts ids from this scan.
@@ -106,12 +110,22 @@ public sealed partial class CacheService
             throw new InvalidOperationException("This cache moved since you looked at it. Scan caches again before clearing it.");
         if (!Directory.Exists(def.Path)) return 0;
         SafeDeleter.EnsureDeletable(def.Path);
-        var isTemp = def.Id == "temp";
-        if (isTemp && !Path.TrimEndingDirectorySeparator(def.Path).EndsWith("Temp", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"The temp folder points somewhere unexpected ({def.Path}), so it was not cleared.");
+        if (def.Id == TempId) CheckTempRoot(def);
 
         var keepsRecent = KeepsRecentFiles.Contains(def.Id);
-        var children = Children(def);
+        var targets = await PickTargetsAsync(Children(def), keepsRecent, op, ct);
+        return await DeleteTargetsAsync($"Deleting {def.Name}", targets, op, ct);
+    }
+
+    private static void CheckTempRoot(CacheDefinition def)
+    {
+        if (!Path.TrimEndingDirectorySeparator(def.Path).EndsWith("Temp", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"The temp folder points somewhere unexpected ({def.Path}), so it was not cleared.");
+    }
+
+    private static async Task<List<(string Path, long Bytes)>> PickTargetsAsync(
+        List<(bool IsDir, string Path, long Length, long WriteTicks)> children, bool keepsRecent, OpReporter op, CancellationToken ct)
+    {
         var targets = new List<(string Path, long Bytes)>();
         var keepAfter = DateTime.UtcNow - RecentWindow;
         op.Phase(keepsRecent ? "Checking which files are still in use" : "Preparing", children.Count);
@@ -128,9 +142,13 @@ public sealed partial class CacheService
                 targets.Add((child, size.Bytes));
             }
         }, ct);
+        return targets;
+    }
 
+    private static async Task<long> DeleteTargetsAsync(string title, List<(string Path, long Bytes)> targets, OpReporter op, CancellationToken ct)
+    {
         long freed = 0;
-        await op.DeleteWithProgressAsync($"Deleting {def.Name}", targets.Sum(t => t.Bytes), counter =>
+        await op.DeleteWithProgressAsync(title, targets.Sum(t => t.Bytes), counter =>
         {
             Parallel.ForEach(targets, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct }, t =>
             {
@@ -142,8 +160,25 @@ public sealed partial class CacheService
         return freed;
     }
 
-    private static List<(bool IsDir, string Path, long Length, long WriteTicks)> Children(CacheDefinition definition) =>
-        DirectorySizer.Shallow(definition.Path).Where(c => !definition.Id.StartsWith("conda-", StringComparison.Ordinal) ||
-            (c.IsDir ? Path.GetFileName(c.Path).Equals("cache", StringComparison.OrdinalIgnoreCase)
-                : c.Path.EndsWith(".conda", StringComparison.OrdinalIgnoreCase) || c.Path.EndsWith(".tar.bz2", StringComparison.OrdinalIgnoreCase))).ToList();
+    /// <summary>What clearing would remove: conda keeps only its package cache, Temp leaves AI tool folders alone.</summary>
+    private List<(bool IsDir, string Path, long Length, long WriteTicks)> Children(CacheDefinition definition)
+    {
+        var isKept = TempKeepList.Compile(definition.Id == TempId ? _keepList() : []);
+        var children = DirectorySizer.Shallow(definition.Path).Where(c => definition.Id switch
+        {
+            TempId => !IsKeptName(Path.GetFileName(c.Path), isKept),
+            _ when definition.Id.StartsWith("conda-", StringComparison.Ordinal) => c.IsDir
+                ? Path.GetFileName(c.Path).Equals("cache", StringComparison.OrdinalIgnoreCase)
+                : c.Path.EndsWith(".conda", StringComparison.OrdinalIgnoreCase) || c.Path.EndsWith(".tar.bz2", StringComparison.OrdinalIgnoreCase),
+            _ => true,
+        });
+        if (definition.Id != TempId) return children.ToList();
+        // Broken links take no space but are clutter; removing one never touches what it pointed at.
+        var links = DirectorySizer.DanglingLinks(definition.Path)
+            .Where(l => !IsKeptName(Path.GetFileName(l), isKept))
+            .Select(l => (false, l, 0L, 0L)); // ticks 0: a broken link has nothing in use, so the 24 hour rule does not apply
+        return children.Concat(links).ToList();
+    }
+
+    private static bool IsKeptName(string name, Func<string, bool> userKept) => TempKeepRules.IsAiToolFolder(name) || TempKeepRules.IsNadfnyFolder(name) || userKept(name);
 }

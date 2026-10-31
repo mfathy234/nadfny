@@ -21,6 +21,13 @@ public sealed class SystemSpaceTests
     }
 
     [Theory]
+    [InlineData(34_359_738_368, 34_359_738_368)]
+    [InlineData(0, null)]
+    [InlineData(-1, null)]
+    public void InstalledMemoryIsKnownOnlyWhenPositive(long total, long? expected) =>
+        Assert.Equal(expected, SystemSpaceMapper.InstalledMemory(total));
+
+    [Theory]
     [InlineData(true, true)]
     [InlineData(false, false)]
     [InlineData(null, null)]

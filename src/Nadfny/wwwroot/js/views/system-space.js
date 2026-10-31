@@ -2,6 +2,7 @@ import { button, h, skeletonList } from '../dom.js';
 import { bytes, plural } from '../format.js';
 import { state } from '../store.js';
 import { changeHibernation, openSpaceSettings, scanSystemSpace } from '../system-space-actions.js';
+import { pagingAdvice } from '../paging-advice.js';
 import { withOpProgress } from './common.js';
 
 const size = (n) => n == null ? 'Size unknown' : bytes(n);
@@ -34,15 +35,21 @@ export function systemSpaceSection() {
   }), button('Turn off hibernation', {
     small: true, key: 'hibernate-off', disabled: busy || !available, onClick: () => changeHibernation('off'),
   })];
-  const pagingMode = info.automaticManaged == null ? 'Windows size management unknown' : info.automaticManaged ? 'Windows manages the size' : 'Automatic management for all drives is off';
+  const pagefileDrives = info.paging.filter((d) => d.pagefileBytes > 0).length;
+  const pagingRow = (d) => {
+    const { note, tip } = pagingAdvice({
+      managed: info.automaticManaged, pagefileBytes: d.pagefileBytes, swapfileBytes: d.swapfileBytes,
+      ramBytes: info.installedMemoryBytes, pagefileDrives,
+    });
+    return row(`Pagefile and swapfile (${d.drive.slice(0, 2)})`, h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, h('span', null, note), tip && h('span', null, tip)),
+      d.pagefileBytes == null || d.swapfileBytes == null ? 'Size unknown' : bytes(d.pagefileBytes + d.swapfileBytes),
+      [settings('pagefile', 'Performance settings')]);
+  };
   return h('section', { class: 'section' }, heading,
     s.status === 'error' && h('div', { class: 'callout' }, s.error),
     h('div', { class: 'list' },
       row('Hibernation file', `${file.path} · ${mode}. Turning it off frees the file and disables Hibernate and Fast Startup. Reduce keeps Fast Startup, at about half the full size.`, size(file.bytes), actions, true),
-      info.paging.map((d) => row(`Pagefile and swapfile (${d.drive.slice(0, 2)})`,
-        `${pagingMode}. pagefile.sys: ${size(d.pagefileBytes)} · swapfile.sys: ${size(d.swapfileBytes)}. Change sizes in Windows.`,
-        d.pagefileBytes == null || d.swapfileBytes == null ? 'Size unknown' : bytes(d.pagefileBytes + d.swapfileBytes),
-        [settings('pagefile', 'Performance settings')])),
+      info.paging.map(pagingRow),
       row('System restore points', info.restorePoints == null ? 'Needs administrator to read' : `${plural(info.restorePoints, 'restore point')} across this PC. Restore points help recover Windows after a system change.`,
         '', [settings('protection', 'System Protection')]),
       !info.shadowReadable ? row('Shadow storage', 'Needs administrator to read', 'Size unknown', [settings('protection', 'System Protection')])

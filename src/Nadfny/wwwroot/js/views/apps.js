@@ -5,6 +5,7 @@ import { bytes, plural } from '../format.js';
 import { opFor } from '../ops.js';
 import { state, update } from '../store.js';
 import { checkbox, rowWrap, segmented, withOpProgress } from './common.js';
+import { ALL_DRIVES, driveFilterOptions, onDrive } from './apps-drives.js';
 import { growthSize } from './history.js';
 
 const total = (a) => (a.appBytes ?? 0) + a.dataBytes;
@@ -23,8 +24,10 @@ const SOURCE_BADGE = { store: ['storefront', 'Store'], steam: ['game-controller'
 function visibleApps() {
   const pass = FILTERS.find(([k]) => k === state.apps.filter)?.[2] ?? (() => true);
   const q = state.apps.query.trim().toLowerCase();
-  return [...state.apps.items.values()]
-    .filter((a) => pass(a) && (!q || `${a.name} ${a.publisher ?? ''} ${a.launcher ?? ''}`.toLowerCase().includes(q)))
+  const all = [...state.apps.items.values()];
+  const known = [...new Set(all.map((a) => a.drive).filter(Boolean))];
+  return all
+    .filter((a) => pass(a) && onDrive(a, state.apps.drive, known) && (!q || `${a.name} ${a.publisher ?? ''} ${a.launcher ?? ''} ${a.drive ?? ''}`.toLowerCase().includes(q)))
     .sort((a, b) => total(b) - total(a));
 }
 
@@ -62,6 +65,7 @@ export const appsView = {
     return h('div', null,
       h('div', { class: 'filters' },
         segmented(FILTERS.map(([value, label, pass]) => ({ value, label, count: all.filter(pass).length })), st.filter, (v) => update((s) => { s.apps.filter = v; }), 'Show'),
+        driveFilter(all, st.drive),
         h('span', { class: 'spacer' }),
         h('label', { class: 'search' }, icon('magnifying-glass'),
           h('input', {
@@ -73,6 +77,13 @@ export const appsView = {
         : h('div', { class: 'list' }, items.map((a) => appRow(a, max))));
   },
 };
+
+function driveFilter(all, drive) {
+  const options = driveFilterOptions(all, total);
+  if (!options.length) return null;
+  const value = options.some((o) => o.value === drive) ? drive : ALL_DRIVES;
+  return segmented(options, value, (v) => update((s) => { s.apps.drive = v; }), 'Drive');
+}
 
 function appRow(a, max) {
   const key = `app:${a.id}`;
@@ -103,7 +114,8 @@ function appRow(a, max) {
           h('span', { class: 'name', title: a.name }, a.name),
           a.broken && h('span', { class: 'badge' }, 'Uninstaller missing'),
           a.isGame && h('span', { class: 'badge' }, icon('game-controller'), 'Game'),
-          badgeText && !(a.isGame && badgeIcon === 'game-controller') && h('span', { class: 'badge' }, icon(badgeIcon), badgeText)),
+          badgeText && !(a.isGame && badgeIcon === 'game-controller') && h('span', { class: 'badge' }, icon(badgeIcon), badgeText),
+          a.drive && h('span', { class: 'badge', title: `Installed on ${a.drive}` }, icon('hard-drives'), a.drive)),
         h('div', { class: 'row-sub' }, sub || ' '),
         a.note && a.source !== 'folder' && h('div', { class: 'row-sub' }, icon('info'), a.note)),
       h('div', { class: 'row-meta' }, a.appBytes == null ? 'App size unknown' : ''),

@@ -106,6 +106,36 @@ public static class DirectorySizer
         }
     }
 
+    /// <summary>Folder links (junctions, symlinks) directly inside a directory whose target no longer exists. Never follows them.</summary>
+    public static IEnumerable<string> DanglingLinks(string path)
+    {
+        try
+        {
+            return new FileSystemEnumerable<string>(path,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                ShallowOptions)
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => IsLinkedFolder(ref entry),
+            }.ToList().Where(IsDangling).ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>A junction or symlink to a folder that is gone.</summary>
+    public static bool IsDangling(string path)
+    {
+        try
+        {
+            var dir = new DirectoryInfo(path);
+            // Directory.Exists on the link itself says true even when its target is gone, so look at the final target.
+            return dir.Attributes.HasFlag(FileAttributes.ReparsePoint) && dir.ResolveLinkTarget(returnFinalTarget: true) is { Exists: false };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
     // Cloud placeholders: the file is listed, but its data lives online (FILE_ATTRIBUTE_RECALL_ON_OPEN / _ON_DATA_ACCESS).
     private const FileAttributes RecallOnOpen = (FileAttributes)0x40000, RecallOnDataAccess = (FileAttributes)0x400000;
     private const FileAttributes CloudOnly = FileAttributes.Offline | RecallOnOpen | RecallOnDataAccess;

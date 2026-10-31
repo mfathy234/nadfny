@@ -16,6 +16,7 @@ public sealed partial class AppService
     private readonly Func<IReadOnlyList<string>> _gameRoots;
     private readonly ConcurrentDictionary<string, (AppCandidate Candidate, AppInfo Info)> _apps = new();
     private readonly ConcurrentDictionary<string, HashSet<string>> _leftovers = new();
+    private DriveName _drives = new(); // fresh each scan, so a renamed drive shows its new label
 
     /// <param name="candidates">Override where apps come from (tests use dummy apps).</param>
     /// <param name="dataRoots">Override the AppData/ProgramData roots searched for data folders.</param>
@@ -44,6 +45,7 @@ public sealed partial class AppService
     private async Task<IReadOnlyList<AppInfo>> ScanCoreAsync(Action<AppInfo> onFound, ScanProgress progress, CancellationToken ct)
     {
         _forcedPreviews.Clear();
+        _drives = new DriveName();
         progress.SetPhase("Reading installed apps", 0);
         var candidates = ShareFolders((await _candidates(ct))
             .Select(c => c.InstallLocation is { } loc ? c with { InstallLocation = SafeDeleter.Canonical(loc) } : c));
@@ -66,7 +68,8 @@ public sealed partial class AppService
         progress.SetPhase("Measuring apps", candidates.Count);
         await Parallel.ForEachAsync(candidates, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ct }, (c, token) =>
         {
-            var info = Measure(c, dataByApp.TryGetValue(c.Id, out var d) ? d : [], token);
+            var info = Measure(c, dataByApp.TryGetValue(c.Id, out var d) ? d : [], token)
+                with { Drive = _drives.For(c.InstallLocation ?? c.SharedInstallLocation) };
             _apps[c.Id] = (c, info);
             results.Add(info);
             progress.CompleteOne(c.Name);

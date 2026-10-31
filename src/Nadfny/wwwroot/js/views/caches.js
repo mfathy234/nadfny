@@ -10,6 +10,8 @@ import { scanToolchains } from '../toolchains-actions.js';
 import { toolchainsSection } from './toolchains.js';
 import { scanAiModels } from '../ai-models-actions.js';
 import { aiModelsSection } from './ai-models.js';
+import { tempGrowthNote, tempBreakdownRow } from './temp-breakdown.js';
+import { toggleTempBreakdown } from '../temp-actions.js';
 
 const CRASH_CACHE_IDS = new Set(['crash-dumps', 'wer-archive', 'wer-queue']);
 const CRASH_WINDOWS_IDS = new Set(['memory-dump', 'minidumps', 'wer-system']);
@@ -44,7 +46,7 @@ export const cachesView = {
         h('div', { class: 'section-head' }, h('h2', null, 'Developer caches'), h('span', { class: 'hint' }, 'Your tools download these again when needed')),
         st.status === 'error' ? emptyState({ ic: 'warning-circle', error: true, title: 'Scan failed', text: st.error, action: button('Try again', { onClick: scanCaches }) })
           : !items.length && st.status === 'scanning' ? skeletonList(5) : items.length
-          ? h('div', { class: 'list' }, items.map((c) => cacheRow(c, max)))
+          ? h('div', { class: 'list' }, items.flatMap((c) => [cacheRow(c, max), c.id === 'temp' ? tempBreakdownRow() : null]))
           : st.status === 'scanning' ? skeletonList(5) : emptyState({ ic: 'archive-box', title: 'No caches found', text: 'None of the known package caches exist on this machine.' })),
       aiModelsSection(),
       toolchainsSection(),
@@ -61,14 +63,22 @@ function cacheRow(c, max) {
   const busy = state.busy.has(`cache:${c.id}`);
   const clear = button(busy ? 'Clearing…' : 'Clear', { small: true, onClick: () => clearCache(c), disabled: busy || state.caches.status === 'scanning' || c.bytes === 0, key: `clear-${c.id}` });
   if (busy) clear.classList.add('busy');
+  const cell = growthSize('caches', c.id, sizeCell(bytes(c.bytes), c.bytes / max), c.bytes);
+  const note = c.id === 'temp' && cell.querySelector('.growth-hint') ? tempGrowthNote() : null;
+  if (note) cell.append(note);
+  const open = state.tempBreakdown.open;
+  const toggle = c.id === 'temp' && h('button', {
+    class: 'icon-btn', type: 'button', 'aria-expanded': String(open), 'aria-label': open ? 'Hide what is in Temp' : 'Show what is in Temp',
+    style: { width: '20px', height: '20px', marginRight: '4px' }, onclick: toggleTempBreakdown,
+  }, icon(open ? 'caret-down' : 'caret-right'));
   return rowWrap(c.id, h('div', { class: 'row no-check' },
     h('div', { style: { minWidth: 0 } },
-      h('div', { class: 'row-title' }, h('span', { class: 'name' }, c.name)),
+      h('div', { class: 'row-title' }, toggle, h('span', { class: 'name' }, c.name)),
       h('div', { class: 'row-sub' }, c.note)),
     h('div', { class: 'row-meta' },
       h('div', { class: 'row-actions' },
         h('button', { class: 'icon-btn', type: 'button', title: c.path, 'aria-label': `Show ${c.name} in Explorer`, onclick: () => reveal(c.path) }, icon('arrow-square-out')))),
-    withOpProgress(`cache:${c.id}`, growthSize('caches', c.id, sizeCell(bytes(c.bytes), c.bytes / max), c.bytes)),
+    withOpProgress(`cache:${c.id}`, cell),
     clear));
 }
 
