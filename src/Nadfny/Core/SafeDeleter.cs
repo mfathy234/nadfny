@@ -37,7 +37,10 @@ public static class SafeDeleter
         try { attributes = File.GetAttributes(path); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
         if (!attributes.HasFlag(FileAttributes.ReparsePoint) || !attributes.HasFlag(FileAttributes.Directory)) return false;
-        new DirectoryInfo(path).Delete(false);
+        // OneDrive placeholders are reparse points too, but real folders: only junctions and symlinks have a link target.
+        var folder = new DirectoryInfo(path);
+        if (folder.LinkTarget is null) return false;
+        folder.Delete(false);
         return true;
     }
 
