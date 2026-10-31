@@ -12,7 +12,7 @@ if (webview) {
       if (!p) return;
       pending.delete(msg.id);
       if (msg.ok) p.resolve(msg.result);
-      else p.reject(Object.assign(new Error(msg.error || 'Something went wrong.'), { cancelled: !!msg.cancelled }));
+      else p.reject(Object.assign(new Error(msg.error || 'Something went wrong.'), { cancelled: !!msg.cancelled, code: msg.code ?? null }));
     } else if (msg?.type === 'event') {
       for (const fn of listeners.get(msg.name) ?? []) fn(msg.data);
     }

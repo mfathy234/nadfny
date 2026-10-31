@@ -8,6 +8,7 @@ public sealed partial class CacheService
     public const string BrokenLinksId = "::broken-links";
     public const string AiToolsId = "::ai-tools";
     public const string KeptByYouId = "::kept-by-you";
+    private const string NadfnyId = "::nadfny";
     private const int TopGroups = 12;
 
     private IReadOnlyDictionary<string, IReadOnlyList<string>> _tempGroups = new Dictionary<string, IReadOnlyList<string>>();
@@ -79,24 +80,25 @@ public sealed partial class CacheService
             tally.Add(e.Path, measured[i].Bytes, measured[i].LastTicks > keepAfter);
         }
 
-        var clearable = tallies.Values.Where(t => t.ToGroup().Kind is "normal" or "links").ToList();
+        var clearable = tallies.Values.Where(t => t.ToGroup().Kind is "normal" or "random" or "links").ToList();
         _tempGroups = clearable.ToDictionary(t => t.ToGroup().Id, t => (IReadOnlyList<string>)t.Paths, StringComparer.OrdinalIgnoreCase);
         return Summarize(root, clearable, tallies.Values.Where(t => t.ToGroup().Kind is "ai" or "user"), keepList);
     }
 
     private static (string Id, string Pattern, string Kind) Classify(string name, bool isDir, bool isLink, Func<string, bool> userKept)
     {
+        if (TempKeepRules.IsNadfnyFolder(name)) return (NadfnyId, "Nadfny update", "app"); // kept, and not listed
         if (TempKeepRules.IsAiToolFolder(name)) return (AiToolsId, "AI tools", "ai");
         if (userKept(name)) return (KeptByYouId, "Kept by you", "user");
         if (isLink) return (BrokenLinksId, "Broken links", "links");
         var pattern = TempGroupName.Of(name, isDir);
-        return (pattern, pattern, "normal");
+        return pattern == TempGroupName.RandomNames ? (pattern, "Random-named folders", "random") : (pattern, pattern, "normal");
     }
 
     private static TempBreakdown Summarize(string root, List<Tally> clearable, IEnumerable<Tally> kept, IReadOnlyList<string> keepList)
     {
         var all = clearable.Select(t => t.ToGroup()).ToList();
-        var names = all.Where(g => g.Kind == "normal").OrderByDescending(g => g.Bytes).ThenByDescending(g => g.Count).ToList();
+        var names = all.Where(g => g.Kind is "normal" or "random").OrderByDescending(g => g.Bytes).ThenByDescending(g => g.Count).ToList();
         var shown = names.Take(TopGroups).Concat(all.Where(g => g.Kind == "links")).ToList();
         var rest = names.Skip(TopGroups).ToList();
         TempOther? other = rest.Count == 0 ? null : new(rest.Count, rest.Sum(g => g.Count), rest.Sum(g => g.Bytes), rest.Sum(g => g.RecentBytes));

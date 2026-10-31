@@ -98,3 +98,18 @@ test('stale check is throttled to about an hour and never runs twice at once', a
   await Promise.all([updates.checkForUpdates(), updates.checkForUpdates()]);
   assert.deepEqual(methods(), ['update.check']);
 });
+
+test('a downloaded update that was removed is downloaded again instead of getting stuck', async () => {
+  reset();
+  host({ check: info() });
+  await updates.checkForUpdates();
+  assert.equal(state.update.status, 'ready');
+  requests.length = 0;
+  respond = ({ id, method }) => queueMicrotask(() => {
+    if (method === 'update.install') receive({ data: { type: 'result', id, ok: false, error: 'The downloaded update was removed.', code: 'update-missing' } });
+    else if (method === 'update.download') reply(id, '0.4.2');
+  });
+  await updates.installNow();
+  assert.deepEqual(methods(), ['update.install', 'update.download']);
+  assert.equal(state.update.status, 'ready');
+});

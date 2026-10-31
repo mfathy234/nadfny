@@ -83,7 +83,8 @@ public sealed class RpcHost
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                Send(new { type = "result", id = req.Id, ok = false, error = ex.Message });
+                var code = ex is Features.Updates.UpdateMissingException ? "update-missing" : null;
+                Send(new { type = "result", id = req.Id, ok = false, error = ex.Message, code });
             }
         });
     }
@@ -123,8 +124,8 @@ public sealed class RpcHost
 
         "temp.breakdown" => await TempBreakdown(),
         "temp.clearGroup" => await _caches.ClearTempGroupAsync(Str(p, "id"), Op(p), CancellationToken.None),
-        "temp.keep.add" => SetKeepList(TempKeepList.Add(_settings.KeepNames, Str(p, "pattern"))),
-        "temp.keep.remove" => SetKeepList(TempKeepList.Remove(_settings.KeepNames, Str(p, "pattern"))),
+        "temp.keep.add" => ChangeKeepList(list => TempKeepList.Add(list, Str(p, "pattern"))),
+        "temp.keep.remove" => ChangeKeepList(list => TempKeepList.Remove(list, Str(p, "pattern"))),
 
         "aiModels.scan" => await Scoped("aiModels", ct => _aiModels.ScanAsync(m => Emit("aiModels.item", m), Progress("aiModels"), ct)),
         "aiModels.remove" => await _aiModels.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
@@ -270,11 +271,19 @@ public sealed class RpcHost
         return breakdown;
     }
 
-    private object SetKeepList(IReadOnlyList<string> keepList)
+    private readonly Lock _settingsLock = new();
+
+    /// <summary>Saves first, so a failed save leaves the list the user sees unchanged; one change at a time.</summary>
+    private object ChangeKeepList(Func<IReadOnlyList<string>, IReadOnlyList<string>> change)
     {
-        _settings = _settings with { TempKeep = keepList };
-        _settings.Save();
-        return new { keepList };
+        lock (_settingsLock)
+        {
+            var keepList = change(_settings.KeepNames);
+            var next = _settings with { TempKeep = keepList };
+            next.Save();
+            _settings = next;
+            return new { keepList };
+        }
     }
 
     private static bool Reveal(string path)

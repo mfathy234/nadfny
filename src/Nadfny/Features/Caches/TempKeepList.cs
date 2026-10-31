@@ -50,8 +50,9 @@ public static class TempKeepList
     public static Func<string, bool> Compile(IReadOnlyList<string> patterns)
     {
         var regexes = patterns
-            .Select(p => new Regex("^" + string.Join(".*", p.Split('*').Select(Regex.Escape)) + "$",
-                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline))
+            // Non-backtracking: a pattern like a*a*a*…b cannot make matching slow.
+            .Select(p => new Regex("^" + string.Join(".*", Regex.Replace(p, @"\*+", "*").Split('*').Select(Regex.Escape)) + "$",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking))
             .ToArray();
         return name => regexes.Any(r => r.IsMatch(name));
     }

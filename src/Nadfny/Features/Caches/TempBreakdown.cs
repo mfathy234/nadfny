@@ -20,11 +20,19 @@ public static partial class TempGroupName
     [GeneratedRegex("([-_.]+)")]
     private static partial Regex Separators();
 
+    /// <summary>Folders whose whole name is random ("3KmkaCDwb97F7dLkxohtX9LTBpd"): one group, never a keep pattern.</summary>
+    public const string RandomNames = "::random-names";
+
     public static string Of(string name, bool isDir)
     {
         if (!isDir && Path.GetExtension(name) is { Length: > 1 } ext) return "*" + ext.ToLowerInvariant();
-        return Pattern(name);
+        return IsRandomName(name) ? RandomNames : Pattern(name);
     }
+
+    // Long, letters and digits only, with digits: a generated id, not a program's name.
+    private static bool IsRandomName(string name) =>
+        name.Length >= 16 && name.All(char.IsAsciiLetterOrDigit) && name.Any(char.IsAsciiDigit)
+        && (name.All(char.IsAsciiHexDigit) || (name.Any(char.IsAsciiLetterUpper) && name.Any(char.IsAsciiLetterLower)));
 
     private static string Pattern(string name)
     {

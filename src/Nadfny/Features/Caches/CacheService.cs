@@ -180,5 +180,5 @@ public sealed partial class CacheService
         return children.Concat(links).ToList();
     }
 
-    private static bool IsKeptName(string name, Func<string, bool> userKept) => TempKeepRules.IsAiToolFolder(name) || userKept(name);
+    private static bool IsKeptName(string name, Func<string, bool> userKept) => TempKeepRules.IsAiToolFolder(name) || TempKeepRules.IsNadfnyFolder(name) || userKept(name);
 }

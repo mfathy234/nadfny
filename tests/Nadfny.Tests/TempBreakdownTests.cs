@@ -36,6 +36,10 @@ public sealed class TempGroupNameTests
     [InlineData("setup.log", false, "*.log")]
     [InlineData("Trace.LOG", false, "*.log")]
     [InlineData("README", false, "README")]
+    [InlineData("3KmkaCDwb97F7dLkxohtX9LTBpd", true, TempGroupName.RandomNames)]
+    [InlineData("b18d211831256e747958", true, TempGroupName.RandomNames)]
+    [InlineData("VisualStudioInstaller", true, "VisualStudioInstaller")]
+    [InlineData("WinSAT", true, "WinSAT")]
     public void Of_GroupsByNamePattern(string name, bool isDir, string expected) =>
         Assert.Equal(expected, TempGroupName.Of(name, isDir));
 }

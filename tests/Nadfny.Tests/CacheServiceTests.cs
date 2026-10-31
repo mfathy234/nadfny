@@ -89,6 +89,31 @@ public sealed class CacheServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Temp_NeverClearsADownloadedNadfnyUpdate()
+    {
+        var old = DateTime.UtcNow.AddDays(-5);
+        Write(@"Temp\Nadfny-update\Nadfny-0.4.3-setup.exe", 500, old);
+        Write(@"Temp\stale\x.tmp", 10, old);
+        var service = new CacheService(() => [new CacheDefinition("temp", "Temporary files", Path.Combine(_root, "Temp"), "")]);
+
+        var scanned = await service.ScanAsync(_ => { }, ScanProgress.None, CancellationToken.None);
+        var freed = await service.ClearAsync(Assert.Single(scanned).Id, OpReporter.None, CancellationToken.None);
+
+        Assert.Equal(10, freed);
+        Assert.True(File.Exists(Path.Combine(_root, "Temp", "Nadfny-update", "Nadfny-0.4.3-setup.exe")));
+    }
+
+    [Fact]
+    public void KeepList_ManyWildcardsStayFastOnLongNames()
+    {
+        var pattern = string.Concat(Enumerable.Repeat("a*", 45)) + "b";
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.False(TempKeepList.Matches(pattern, new string('a', 200)));
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1), $"took {watch.Elapsed}");
+        Assert.True(TempKeepList.Matches("build-*-run*", "build-17-run-x"));
+    }
+
+    [Fact]
     public async Task OtherCaches_DoNotSkipFoldersNamedAfterAiTools()
     {
         Write(@"npm\claude\pkg.tgz", 70);

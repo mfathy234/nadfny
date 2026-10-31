@@ -41,7 +41,7 @@ export function systemSpaceSection() {
       managed: info.automaticManaged, pagefileBytes: d.pagefileBytes, swapfileBytes: d.swapfileBytes,
       ramBytes: info.installedMemoryBytes, pagefileDrives,
     });
-    return row(`Pagefile and swapfile (${d.drive.slice(0, 2)})`, [note, tip && h('div', null, tip)],
+    return row(`Pagefile and swapfile (${d.drive.slice(0, 2)})`, h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, h('span', null, note), tip && h('span', null, tip)),
       d.pagefileBytes == null || d.swapfileBytes == null ? 'Size unknown' : bytes(d.pagefileBytes + d.swapfileBytes),
       [settings('pagefile', 'Performance settings')]);
   };

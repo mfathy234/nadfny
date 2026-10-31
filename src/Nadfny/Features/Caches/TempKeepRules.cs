@@ -14,4 +14,9 @@ public static partial class TempKeepRules
     private static partial Regex AiToolPattern();
 
     public static bool IsAiToolFolder(string name) => AiToolPattern().IsMatch(name);
+
+    /// <summary>Nadfny's own downloaded update: it waits here until the user chooses Restart to update.</summary>
+    public const string UpdateFolder = "Nadfny-update";
+
+    public static bool IsNadfnyFolder(string name) => name.Equals(UpdateFolder, StringComparison.OrdinalIgnoreCase);
 }

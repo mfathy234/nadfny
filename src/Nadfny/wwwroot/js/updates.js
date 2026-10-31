@@ -83,14 +83,17 @@ async function startUpdate() {
   await downloadUpdate();
 }
 
-async function installNow() {
+export async function installNow() {
   update((s) => { s.update = { ...s.update, status: 'installing' }; });
   try {
     await call('update.install');
     toast('Installing the update. Nadfny will reopen in a moment.');
   } catch (err) {
-    update((s) => { s.update = { ...s.update, status: 'ready' }; });
-    toast(err.message, 'bad');
+    // The installer was removed while it waited (Temp cleared by another tool): fetch it again.
+    const missing = err.code === 'update-missing';
+    update((s) => { s.update = { ...s.update, status: missing ? 'available' : 'ready' }; });
+    toast(err.message, missing ? undefined : 'bad');
+    if (missing) await downloadUpdate({ silent: true });
   }
 }
 
