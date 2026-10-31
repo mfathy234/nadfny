@@ -10,7 +10,8 @@ public sealed record ShadowStorage(string Drive, string StorageDrive, ulong? Use
     public bool MaximumUnlimited => Maximum == ulong.MaxValue;
 }
 public sealed record SystemSpaceSnapshot(HibernationInfo Hibernation, IReadOnlyList<PagingDrive> Paging,
-    bool? AutomaticManaged, IReadOnlyList<ShadowStorage> Storage, bool ShadowReadable, int? RestorePoints);
+    bool? AutomaticManaged, IReadOnlyList<ShadowStorage> Storage, bool ShadowReadable, int? RestorePoints,
+    long? InstalledMemoryBytes = null);
 public sealed record HibernationResult(bool Cancelled, long Freed, SystemSpaceSnapshot Info);
 internal sealed record CimSpace(bool? AutomaticManaged, IReadOnlyList<ShadowStorage> Storage, bool ShadowReadable, int? RestorePoints);
 
@@ -20,6 +21,8 @@ internal static class SystemSpaceMapper
     internal static HibernationInfo Hibernation(string path, long? bytes, object? enabled, object? type) =>
         new(path, bytes, enabled is int e && e is 0 or 1 ? e == 1 : bytes > 0 ? true : null,
             type is int t ? t switch { 1 => "reduced", 2 => "full", _ => "unknown" } : "unknown");
+
+    internal static long? InstalledMemory(long totalBytes) => totalBytes > 0 ? totalBytes : null;
 
     internal static CimSpace Cim(JsonElement root)
     {

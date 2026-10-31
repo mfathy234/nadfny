@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Nadfny.Bridge;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using Microsoft.Win32;
 
 namespace Nadfny;
 
@@ -21,6 +22,13 @@ public sealed class MainForm : Form
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Controls.Add(_web);
         Load += async (_, _) => await InitAsync();
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        Disposed += (_, _) => SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+    }
+
+    private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume) Post("""{"type":"event","name":"system.resumed","data":{}}""");
     }
 
     protected override void OnHandleCreated(EventArgs e)

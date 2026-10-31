@@ -77,7 +77,7 @@ Get the latest version from [Releases](https://github.com/mfathy234/nadfny/relea
 
 All of them include the .NET runtime, so there is nothing else to download.
 
-**Updates:** Nadfny checks GitHub for a new release shortly after it starts and every few hours (or use *Check for updates* in the sidebar). The installed version downloads the new installer, verifies it against the release's SHA-256 checksums, and upgrades in place when you choose *Restart to update*. The portable version shows the update and links to the release page.
+**Updates:** Nadfny checks GitHub for a new release shortly after it starts, then every hour and whenever you come back to the window or the PC wakes up (or use *Check for updates* in the sidebar). The installed version downloads the new installer in the background, verifies it against the release's SHA-256 checksums, and shows *Restart to update* when it is ready; it never restarts on its own. A failed background download is retried at the next check. *Not now* hides the card until the next launch or a newer version. The portable version shows the update and links to the release page.
 
 **Requirements:** Windows 10 or 11 (x64) with the Microsoft Edge WebView2 Runtime, which is already part of Windows 11. `git` and Docker are optional; their sections light up when they are installed.
 

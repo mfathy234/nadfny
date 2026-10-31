@@ -62,6 +62,7 @@ internal static class SystemSpaceReader
             catch (JsonException) { }
         }
         return new(SystemSpaceMapper.Hibernation(path, SystemSpaceService.FileBytes(systemDrive, "hiberfil.sys"), enabled, type),
-            paging, cim.AutomaticManaged, cim.Storage, cim.ShadowReadable, cim.RestorePoints);
+            paging, cim.AutomaticManaged, cim.Storage, cim.ShadowReadable, cim.RestorePoints,
+            SystemSpaceMapper.InstalledMemory(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes));
     }
 }
