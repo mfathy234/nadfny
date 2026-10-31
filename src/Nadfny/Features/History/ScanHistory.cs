@@ -11,6 +11,7 @@ public sealed class ScanHistory
 {
     private readonly HistoryService _history;
     private readonly Action _changed;
+    private DateTime _lastTempGroups;
 
     public ScanHistory(Action changed, HistoryService? history = null)
     {
@@ -34,6 +35,15 @@ public sealed class ScanHistory
         try { Save(Category(result)); }
         catch (Exception ex) { Debug.WriteLine($"History capture: {ex}"); }
         return result;
+    }
+
+    /// <summary>Saves the Temp breakdown so a later one can say what grew. At most one per half hour, or repeated looks would hide the growth.</summary>
+    public void RecordTempGroups(IReadOnlyList<TempGroup> groups)
+    {
+        var now = DateTime.UtcNow;
+        if (groups.Count == 0 || now - _lastTempGroups < TimeSpan.FromMinutes(30)) return;
+        _lastTempGroups = now;
+        Save(From(HistoryGrowth.TempGroupsCategory, groups.Select(g => new HistoryItem(g.Id, g.Pattern, g.Bytes, g.Count))));
     }
 
     private void Save(HistoryCategory? category)

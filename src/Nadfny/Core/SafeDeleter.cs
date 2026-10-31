@@ -17,6 +17,7 @@ public static class SafeDeleter
     public static void DeletePermanently(string path, CancellationToken ct = default, DeleteCounter? counter = null)
     {
         EnsureDeletable(path);
+        if (TryDeleteFolderLink(path)) return;
         if (File.Exists(path))
         {
             var length = DirectorySizer.OnDisk(new FileInfo(path));
@@ -27,6 +28,17 @@ public static class SafeDeleter
         }
         if (!Directory.Exists(path)) return;
         DeleteTree(new DirectoryInfo(path), ct, counter);
+    }
+
+    /// <summary>Removes a junction or folder symlink itself, also when its target is gone. Never touches the target.</summary>
+    private static bool TryDeleteFolderLink(string path)
+    {
+        FileAttributes attributes;
+        try { attributes = File.GetAttributes(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+        if (!attributes.HasFlag(FileAttributes.ReparsePoint) || !attributes.HasFlag(FileAttributes.Directory)) return false;
+        new DirectoryInfo(path).Delete(false);
+        return true;
     }
 
     /// <summary>

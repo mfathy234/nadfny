@@ -36,7 +36,7 @@ public sealed class RpcHost
     private readonly DockerService _docker = new();
     private readonly WslService _wsl = new();
     private readonly ArtifactService _artifacts = new();
-    private readonly CacheService _caches = new();
+    private readonly CacheService _caches;
     private readonly ToolchainService _toolchains = new();
     private readonly AiModelService _aiModels = new();
     private readonly ExploreService _explore = new();
@@ -54,6 +54,7 @@ public sealed class RpcHost
     public RpcHost(Action<string> post, Func<string?> pickFolder, Func<string, bool> setClipboard, Action exitApp)
     {
         _exitApp = exitApp;
+        _caches = new(keepList: () => _settings.KeepNames);
         _post = post;
         _pickFolder = pickFolder;
         _setClipboard = setClipboard;
@@ -119,6 +120,11 @@ public sealed class RpcHost
 
         "caches.scan" => await Scoped("caches", ct => _history.CaptureAsync(_caches.ScanAsync(c => Emit("caches.item", c), Progress("caches"), ct), ct)),
         "caches.clear" => await _caches.ClearAsync(Str(p, "id"), Op(p), CancellationToken.None, Str(p, "path") is { Length: > 0 } path ? path : null),
+
+        "temp.breakdown" => await TempBreakdown(),
+        "temp.clearGroup" => await _caches.ClearTempGroupAsync(Str(p, "id"), Op(p), CancellationToken.None),
+        "temp.keep.add" => SetKeepList(TempKeepList.Add(_settings.KeepNames, Str(p, "pattern"))),
+        "temp.keep.remove" => SetKeepList(TempKeepList.Remove(_settings.KeepNames, Str(p, "pattern"))),
 
         "aiModels.scan" => await Scoped("aiModels", ct => _aiModels.ScanAsync(m => Emit("aiModels.item", m), Progress("aiModels"), ct)),
         "aiModels.remove" => await _aiModels.RemoveAsync(Str(p, "id"), Op(p), CancellationToken.None),
@@ -255,6 +261,20 @@ public sealed class RpcHost
         _settings = _settings with { Roots = _settings.Roots.Where(r => !r.Equals(path, StringComparison.OrdinalIgnoreCase)).ToList() };
         _settings.Save();
         return new { roots = _settings.Roots };
+    }
+
+    private async Task<TempBreakdown> TempBreakdown()
+    {
+        var breakdown = await _caches.BreakdownAsync(CancellationToken.None);
+        _history.RecordTempGroups(breakdown.All);
+        return breakdown;
+    }
+
+    private object SetKeepList(IReadOnlyList<string> keepList)
+    {
+        _settings = _settings with { TempKeep = keepList };
+        _settings.Save();
+        return new { keepList };
     }
 
     private static bool Reveal(string path)

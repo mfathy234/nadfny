@@ -13,6 +13,7 @@ export const state = {
   wsl: { status: 'idle', error: null, report: null },
   artifacts: { ...scan(), kind: 'all', age: 0, sort: 'size', expanded: new Set() },
   caches: scan(),
+  tempBreakdown: { open: false, status: 'idle', error: null, data: null },
   toolchains: { ...scan(), warnings: [] },
   aiModels: scan(),
   apps: { ...scan(), filter: 'all', drive: 'all', query: '', expanded: new Set(), queueRunning: false },

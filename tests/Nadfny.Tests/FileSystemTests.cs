@@ -74,6 +74,34 @@ public sealed class FileSystemTests : IDisposable
         Assert.True(File.Exists(keep));
     }
 
+    [Fact]
+    public void DeletePermanently_RemovesJunctionWhoseTargetIsGone()
+    {
+        var target = Path.Combine(_root, "target");
+        Write(@"target\a.txt", 5);
+        var link = Path.Combine(_root, "link");
+        TestLinks.Junction(link, target);
+        Directory.Delete(target, true);
+
+        SafeDeleter.DeletePermanently(link);
+
+        Assert.False(Directory.Exists(link));
+        Assert.Empty(new DirectoryInfo(_root).GetFileSystemInfos());
+    }
+
+    [Fact]
+    public void DeletePermanently_NeverFollowsAJunctionWhoseTargetExists()
+    {
+        var keep = Write(@"target\sub\important.txt", 5);
+        var link = Path.Combine(_root, "link");
+        TestLinks.Junction(link, Path.Combine(_root, "target"));
+
+        SafeDeleter.DeletePermanently(link);
+
+        Assert.False(Directory.Exists(link));
+        Assert.True(File.Exists(keep));
+    }
+
     [Theory]
     [InlineData(@"C:\")]
     [InlineData(@"C:\Windows\System32")]
